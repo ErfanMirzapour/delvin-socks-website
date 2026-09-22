@@ -32,6 +32,15 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# sqlite database (auto-seeded, local only)
+data/*.db
+data/*.db-shm
+data/*.db-wal
+
+# uploaded product images (local only)
+public/uploads/*
 
 # vercel
 .vercel

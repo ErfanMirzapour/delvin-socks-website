@@ -1,26 +1,37 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --font-vazir: "Vazirmatn", "Tahoma", sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  direction: rtl;
+  font-family: var(--font-vazir);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-vazir);
+  background: #fffdf8;
+  color: #222;
 }
+
+/* hide number spinners */
+input[type="number"]::-webkit-inner-spin-button { opacity: 1; }
+
+/* ——— 5 design tokens ——— */
+.theme-v1 { --bg:#FBF6EE; --ink:#3E2A20; --accent:#D9A441; --card:#FFFDF7; --line:#E7DCC8; }
+.theme-v2 { --bg:#FFFDF5; --ink:#191817; --accent:#FF4D6D; --card:#ffffff; --line:#191817; }
+.theme-v3 { --bg:#FFFFFF; --ink:#1a1a1a; --accent:#1a1a1a; --card:#ffffff; --line:#ececec; }
+.theme-v4 { --bg:#1A1216; --ink:#F7EDDE; --accent:#C73E3A; --card:#241A20; --line:#3d2c33; }
+.theme-v5 { --bg:#FAF9F6; --ink:#111111; --accent:#0F4C3A; --card:#ffffff; --line:#d8d5cc; }
+
+.knit-divider {
+  height: 14px;
+  background-image: radial-gradient(circle at 8px 7px, var(--accent) 5px, transparent 6px);
+  background-size: 28px 14px;
+  opacity: .5;
+}
+.sticker { transform: rotate(-6deg); }
+.marquee { animation: mq 18s linear infinite; }
+@keyframes mq { from { transform: translateX(0);} to { transform: translateX(50%);} }
+@media (prefers-reduced-motion: reduce) { .marquee { animation: none; } }
