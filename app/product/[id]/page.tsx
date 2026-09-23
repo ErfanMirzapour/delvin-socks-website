@@ -15,7 +15,7 @@ export default function ProductPage() {
 
   useEffect(() => {
     fetch("/api/products?category=all", { cache: "no-store" })
-      .then((r) => r.json())
+      .then((r) => r.json() as Promise<Product[]>)
       .then((all: Product[]) => setP(all.find((x) => String(x.id) === String(id)) || null));
   }, [id]);
 

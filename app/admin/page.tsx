@@ -25,12 +25,12 @@ export default function AdminPage() {
 
   async function loadProducts() {
     const r = await fetch("/api/products?category=all", { cache: "no-store" });
-    if (r.ok) setProducts(await r.json());
+    if (r.ok) setProducts((await r.json()) as Product[]);
     else if (r.status === 401) setAuthed(false);
   }
   async function loadOrders() {
     const r = await fetch("/api/orders", { cache: "no-store" });
-    if (r.ok) setOrders(await r.json());
+    if (r.ok) setOrders((await r.json()) as (Order & { items: Order["items"] })[]);
   }
 
   useEffect(() => {
@@ -57,7 +57,7 @@ export default function AdminPage() {
       const fd = new FormData();
       fd.append("file", f);
       const r = await fetch("/api/upload", { method: "POST", body: fd });
-      const j = await r.json();
+      const j = (await r.json()) as { url?: string; error?: string };
       if (!r.ok) throw new Error(j.error);
       return j.url as string;
     } catch (e: unknown) {
@@ -104,7 +104,7 @@ export default function AdminPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ current: curPw, next: newPw }),
     });
-    const j = await r.json().catch(() => ({}));
+    const j = (await r.json().catch(() => ({}))) as { error?: string };
     if (r.ok) {
       setPwMsg("✓ رمز عوض شد");
       setCurPw(""); setNewPw(""); setNewPw2("");

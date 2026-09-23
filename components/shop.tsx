@@ -8,7 +8,7 @@ export function useProducts(category: string) {
   useEffect(() => {
     setLoading(true);
     fetch(`/api/products?category=${category}`, { cache: "no-store" })
-      .then((r) => r.json())
+      .then((r) => r.json() as Promise<Product[]>)
       .then(setData)
       .finally(() => setLoading(false));
   }, [category]);

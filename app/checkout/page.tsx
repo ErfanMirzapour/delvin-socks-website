@@ -14,7 +14,7 @@ export default function CheckoutPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    fetch("/api/products?category=all", { cache: "no-store" }).then((r) => r.json()).then(setProducts);
+    fetch("/api/products?category=all", { cache: "no-store" }).then((r) => r.json() as Promise<Product[]>).then(setProducts);
   }, []);
 
   const rows = joinCart(cart.lines, products);
@@ -29,7 +29,7 @@ export default function CheckoutPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, items: cart.lines }),
       });
-      const j = await res.json();
+      const j = (await res.json()) as { id: number; error?: string };
       if (!res.ok) throw new Error(j.error || "خطا");
       cart.clear();
       router.push(`/success?id=${j.id}`);

@@ -6,13 +6,12 @@ Live design: **v1 "Warm Bazaar"** is the main storefront at `/` (`/v1` redirects
 
 ## Stack
 
-- Next.js 16 App Router + React 19
-- `better-sqlite3` (SQLite, auto-created; seeded with samples in dev, empty in production)
+- Next.js 16 App Router + React 19, deployed on **Cloudflare Workers** via `@opennextjs/cloudflare` (free tier)
+- **Cloudflare D1** (SQLite-compatible) for products/orders/settings — local emulation in dev, remote D1 in production
+- **Cloudflare R2** for product photo uploads (served via `/img/...`)
 - Tailwind CSS 4, Vazirmatn font, `lang="fa" dir="rtl"`
 - Cart in `localStorage` (`socks_cart_v1`)
 - Admin auth via password hash in DB + httpOnly cookie `socks_admin`
-
-> Build constraint: this project **must use webpack**. All scripts already use `--webpack` because Turbopack fails on the `better-sqlite3` native binding. `next.config.ts` sets `serverExternalPackages: ["better-sqlite3"]`.
 
 ## Routes
 
@@ -31,9 +30,9 @@ Live design: **v1 "Warm Bazaar"** is the main storefront at `/` (`/v1` redirects
 ```bash
 npm install
 # create .env (see Environment variables below)
-npm run dev            # http://localhost:3000 (webpack)
-npm run build          # production build (webpack)
-npm start              # serve production build
+npm run dev            # http://localhost:3000, local D1+R2 emulation, seeds samples
+npm run preview        # production build on the real Workers runtime, locally
+npm run deploy         # build + deploy to Cloudflare (after one-time setup below)
 ```
 
 ## Environment variables
@@ -48,8 +47,15 @@ All in `.env` (gitignored, never committed):
 | `TELEGRAM_NOTIFY_IN_DEV` | no | Set `true` only for an explicit dev notify test. Default: notify in production only |
 | `NEXT_PUBLIC_SHOP_PHONE` | yes | Shop phone shown in footer + About + success page |
 | `NEXT_PUBLIC_TELEGRAM_CHANNEL` | no | Public channel link, e.g. `https://t.me/delvin_socks` |
-| `DB_PATH` | no | SQLite file path (default `data/shop.db`). Point to a persistent volume in production |
 | `DB_SEED` | no | `true`/`false`. Default: seed samples in dev, no seed in production |
+
+Locally these come from `.env`. **In production they must be Worker secrets/vars** (`.env` is never uploaded):
+
+```bash
+npx wrangler secret put ADMIN_PASSWORD
+npx wrangler secret put TELEGRAM_BOT_TOKEN
+npx wrangler secret put TELEGRAM_CHAT_ID
+```
 
 Example `.env`:
 
@@ -59,7 +65,6 @@ TELEGRAM_BOT_TOKEN=123456:ABC-DEF...
 TELEGRAM_CHAT_ID=987654321
 NEXT_PUBLIC_SHOP_PHONE=0912-000-0000
 NEXT_PUBLIC_TELEGRAM_CHANNEL=https://t.me/your_channel
-DB_PATH=data/shop.db
 ```
 
 ## Telegram notifications (one message per order, production only)
@@ -84,7 +89,7 @@ Notes:
 Not linked from the site header — open the URL directly. Login with the admin password (first run: `ADMIN_PASSWORD` from `.env`, default `admin123`).
 
 - **تغییر رمز** (next to logout): change the password without touching `.env`. You stay logged in; all other sessions are logged out.
-- Products tab: add / edit / delete, set price (تومان) and stock. `stock = 0` → storefront shows ناموجود and the item sinks to the end of the list. Image via mobile upload (`/public/uploads`, 3 MB max) or direct URL.
+- Products tab: add / edit / delete, set price (تومان) and stock. `stock = 0` → storefront shows ناموجود and the item sinks to the end of the list. Image via mobile upload (R2, 3 MB max) or direct URL. Deleting a product also deletes its uploaded photo.
 - Orders tab: list (newest first), expand for details, toggle status `new` / `sent`, tap-to-call customer, 🗑 delete order.
 
 ## Stock & order lifecycle
@@ -93,22 +98,36 @@ Not linked from the site header — open the URL directly. Login with the admin 
 - Marking an order **sent** decrements stock (floored at 0). Moving it back to **new** restores stock.
 - Deleting a **new** order changes nothing. Deleting a **sent** order does **not** restore stock (those items already shipped).
 
-## Database
+## Database & storage
 
-- SQLite file (default `data/shop.db`), auto-created. Tables: `products`, `orders`, `settings` (admin password hash).
-- Dev (`npm run dev`): auto-seeds 9 sample products on an empty DB.
-- Production (`NODE_ENV=production`): starts **empty** — add real products via `/admin`.
-- To reset dev: stop the server, delete `data/shop.db*`, restart — it re-seeds.
-- `data/*.db*` is gitignored; production needs a persistent volume (`DB_PATH`) + regular backup (see TODO).
+- **D1** (SQLite API). Tables: `products`, `orders`, `settings` (admin password hash). Schema is ensured by the app on first request — no manual migration needed.
+- Dev (`npm run dev`): local D1 emulation (state in `.wrangler/`, gitignored), auto-seeds 9 sample products on an empty DB.
+- Production: remote D1, starts **empty** — add real products via `/admin`.
+- Product photos live in the **R2** bucket `delvin-socks-uploads`, served via `/img/...` (local R2 emulation in dev).
+
+## Deploy to Cloudflare (one-time setup, all free)
+
+```bash
+npx wrangler login
+npx wrangler d1 create delvin-socks-db        # copy database_id into wrangler.jsonc
+npx wrangler r2 bucket create delvin-socks-uploads
+npx wrangler secret put ADMIN_PASSWORD
+npx wrangler secret put TELEGRAM_BOT_TOKEN
+npx wrangler secret put TELEGRAM_CHAT_ID
+npm run deploy
+```
+
+Then attach the domain: Cloudflare dashboard → Workers & Pages → `delvin-socks` → Settings → Domains & Routes → Add `delvin-socks.ir` (move the domain's nameservers to Cloudflare if needed). HTTPS is automatic.
 
 ## TODO
 
-- [ ] Production deploy for delvin-socks.ir (VPS + Docker + persistent `DB_PATH` volume + HTTPS — see deployment options below)
+- [x] Production deploy for delvin-socks.ir → Cloudflare Workers + D1 + R2 (done, free tier)
+- [ ] Attach `delvin-socks.ir` custom domain in the Cloudflare dashboard
 - [ ] Set real `NEXT_PUBLIC_SHOP_PHONE` and `NEXT_PUBLIC_TELEGRAM_CHANNEL`
 - [ ] Change `ADMIN_PASSWORD` from default `admin123` (or change it from the panel after first deploy)
 - [ ] Decide product catalog + real photos (replace `public/socks/*.svg` placeholders where needed)
 - [ ] Add `robots.txt` / sitemap + real shop name in `app/layout.tsx` metadata
-- [ ] Upload hygiene: image resize/compress, delete orphan files on product delete
+- [ ] Upload hygiene: image resize/compress on upload (R2 object is already deleted with its product)
 - [ ] Order management: search/filter, export CSV
 - [ ] Harden checkout: rate-limit `POST /api/orders`, basic spam honeypot
 - [ ] Optional later: online payment gateway, SMS confirmation, multi-admin accounts

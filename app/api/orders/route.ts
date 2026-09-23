@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
-import { getDb, type OrderItem } from "@/lib/db";
-import { isAdmin } from "@/lib/auth";
+import { ensureSchema, seedIfEmpty, type OrderItem } from "@/lib/db";
+import { cfContext, isAdmin } from "@/lib/auth";
 import { notifyTelegram } from "@/lib/telegram";
+
+export const dynamic = "force-dynamic";
 
 const PHONE_RE = /^09\d{9}$/;
 const POSTAL_RE = /^\d{10}$/;
@@ -13,17 +15,24 @@ function normalizePhone(p: string): string {
 export async function GET() {
   if (!(await isAdmin()))
     return NextResponse.json({ error: "دسترسی ندارید" }, { status: 401 });
-  const db = getDb();
-  const rows = db
+  const db = await ensureSchema();
+  const { results } = await db
     .prepare("SELECT * FROM orders ORDER BY id DESC LIMIT 200")
-    .all() as Array<Record<string, unknown>>;
+    .all<Record<string, unknown>>();
   return NextResponse.json(
-    rows.map((r) => ({ ...r, items: JSON.parse(String(r.items_json)) }))
+    results.map((r) => ({ ...r, items: JSON.parse(String(r.items_json)) }))
   );
 }
 
 export async function POST(req: Request) {
-  const b = await req.json();
+  const b = (await req.json()) as {
+    fullname?: string;
+    phone?: string;
+    address?: string;
+    postal_code?: string;
+    note?: string;
+    items?: Array<{ id: number; qty?: number }>;
+  };
   const fullname = String(b.fullname || "").trim();
   const phone = normalizePhone(String(b.phone || "").trim());
   const address = String(b.address || "").trim();
@@ -43,13 +52,16 @@ export async function POST(req: Request) {
   if (lines.length === 0)
     return NextResponse.json({ error: "سبد خرید خالی است" }, { status: 400 });
 
-  const db = getDb();
-  // validate stock + compute total in a transaction
+  const db = await ensureSchema();
+  await seedIfEmpty(db);
+  // NOTE: stock is NOT decremented here. It is decremented only when an
+  // admin marks the order "sent" (PATCH /api/orders/[id]).
   const ids = lines.map((l: { id: number }) => Number(l.id));
   const placeholders = ids.map(() => "?").join(",");
-  const products = db
-    .prepare(`SELECT * FROM products WHERE id IN (${placeholders})`)
-    .all(...ids) as Array<{ id: number; title: string; price: number; stock: number }>;
+  const { results: products } = await db
+    .prepare(`SELECT id, title, price, stock FROM products WHERE id IN (${placeholders})`)
+    .bind(...ids)
+    .all<{ id: number; title: string; price: number; stock: number }>();
   const pmap = new Map(products.map((p) => [p.id, p]));
   const items: OrderItem[] = [];
   let total = 0;
@@ -63,23 +75,23 @@ export async function POST(req: Request) {
     total += p.price * qty;
   }
 
-  const tx = db.transaction(() => {
-    // NOTE: stock is NOT decremented here. It is decremented only when an
-    // admin marks the order "sent" (PATCH /api/orders/[id]).
-    return db
-      .prepare(
-        "INSERT INTO orders (fullname, phone, address, postal_code, note, items_json, total) VALUES (?,?,?,?,?,?,?)"
-      )
-      .run(fullname, phone, address, postalEn, note, JSON.stringify(items), total);
-  });
-  const r = tx();
+  const r = await db
+    .prepare(
+      "INSERT INTO orders (fullname, phone, address, postal_code, note, items_json, total) VALUES (?,?,?,?,?,?,?)"
+    )
+    .bind(fullname, phone, address, postalEn, note, JSON.stringify(items), total)
+    .run();
 
   const order = {
-    id: Number(r.lastInsertRowid),
+    id: Number(r.meta.last_row_id),
     fullname, phone, address, postal_code: postalEn, note,
     items, total, status: "new", created_at: new Date().toLocaleString("fa-IR"),
   };
-  // fire-and-forget telegram
-  notifyTelegram(order as never).catch(() => {});
+  // Fire-and-forget Telegram (kept alive via waitUntil on Workers).
+  try {
+    cfContext().ctx.waitUntil(notifyTelegram(order).catch(() => {}));
+  } catch {
+    notifyTelegram(order).catch(() => {});
+  }
   return NextResponse.json({ id: order.id, total });
 }

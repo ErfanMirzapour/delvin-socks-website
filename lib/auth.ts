@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { getAdminPasswordHash, hashPassword } from "./db";
 
 const COOKIE = "socks_admin";
@@ -11,7 +12,7 @@ async function expectedToken(): Promise<string> {
 
 export async function verifyAdminPassword(pw: string): Promise<boolean> {
   if (!pw) return false;
-  return hashPassword(pw) === getAdminPasswordHash();
+  return hashPassword(pw) === (await getAdminPasswordHash());
 }
 
 export async function isAdmin(): Promise<boolean> {
@@ -37,3 +38,8 @@ export async function clearAdminCookie() {
 }
 
 export { COOKIE };
+
+// Cloudflare request context (env bindings, waitUntil). Available in routes.
+export function cfContext() {
+  return getCloudflareContext();
+}

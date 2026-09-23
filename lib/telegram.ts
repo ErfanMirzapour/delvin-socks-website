@@ -1,9 +1,8 @@
 import type { Order } from "./db";
+import { secret } from "./db";
 
 export function telegramConfigured(): boolean {
-  return Boolean(
-    process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID
-  );
+  return Boolean(secret("TELEGRAM_BOT_TOKEN") && secret("TELEGRAM_CHAT_ID"));
 }
 
 export async function notifyTelegram(order: Order): Promise<boolean> {
@@ -11,11 +10,11 @@ export async function notifyTelegram(order: Order): Promise<boolean> {
   // TELEGRAM_NOTIFY_IN_DEV=true for an explicit manual test.
   if (
     process.env.NODE_ENV !== "production" &&
-    process.env.TELEGRAM_NOTIFY_IN_DEV !== "true"
+    secret("TELEGRAM_NOTIFY_IN_DEV") !== "true"
   )
     return false;
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
+  const token = secret("TELEGRAM_BOT_TOKEN");
+  const chatId = secret("TELEGRAM_CHAT_ID");
   if (!token || !chatId) return false;
   const lines = order.items.map(
     (it, i) =>

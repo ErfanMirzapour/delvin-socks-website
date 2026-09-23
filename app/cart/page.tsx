@@ -9,7 +9,7 @@ export default function CartPage() {
   const cart = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   useEffect(() => {
-    fetch("/api/products?category=all", { cache: "no-store" }).then((r) => r.json()).then(setProducts);
+    fetch("/api/products?category=all", { cache: "no-store" }).then((r) => r.json() as Promise<Product[]>).then(setProducts);
   }, []);
   const rows = joinCart(cart.lines, products);
   const total = rows.reduce((s, r) => s + r.product.price * r.qty, 0);

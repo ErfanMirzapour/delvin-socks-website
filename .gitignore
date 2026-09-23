@@ -33,13 +33,16 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
-# sqlite database (auto-seeded, local only)
+# legacy local sqlite (pre-Cloudflare) — never commit
 data/*.db
 data/*.db-shm
 data/*.db-wal
 
-# uploaded product images (local only)
-public/uploads/*
+# cloudflare
+.open-next
+.dev.vars
+.wrangler
+worker-configuration.d.ts
 
 # vercel
 .vercel

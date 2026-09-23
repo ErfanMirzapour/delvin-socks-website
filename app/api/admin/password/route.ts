@@ -11,10 +11,10 @@ import {
 export async function PATCH(req: Request) {
   if (!(await isAdmin()))
     return NextResponse.json({ error: "دسترسی ندارید" }, { status: 401 });
-  const b = await req.json().catch(() => ({}));
+  const b = (await req.json().catch(() => ({}))) as { current?: string; next?: string };
   const current = String(b.current || "");
   const nextPw = String(b.next || "");
-  if (hashPassword(current) !== getAdminPasswordHash())
+  if (hashPassword(current) !== (await getAdminPasswordHash()))
     return NextResponse.json({ error: "رمز فعلی اشتباه است" }, { status: 400 });
   if (nextPw.length < 6)
     return NextResponse.json(
