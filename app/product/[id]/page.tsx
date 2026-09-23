@@ -38,9 +38,9 @@ export default function ProductPage() {
           <button
             disabled={p.stock <= 0}
             onClick={() => { add(p.id); setAdded(true); }}
-            className="flex-1 py-3 rounded-2xl bg-black text-white font-black disabled:opacity-30"
+            className={`flex-1 py-3 rounded-2xl font-black disabled:opacity-30 ${added && p.stock > 0 ? "btn-pop bg-green-700 text-white" : "bg-black text-white"}`}
           >
-            {p.stock <= 0 ? "ناموجود" : "افزودن به سبد خرید"}
+            {p.stock <= 0 ? "ناموجود" : added ? "✓ به سبد اضافه شد" : "افزودن به سبد خرید"}
           </button>
           <Link href="/cart" className="px-6 py-3 rounded-2xl border font-bold">سبد</Link>
         </div>

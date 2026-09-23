@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { setAdminCookie, clearAdminCookie } from "@/lib/auth";
+import { setAdminCookie, clearAdminCookie, verifyAdminPassword } from "@/lib/auth";
 
 export async function POST(req: Request) {
   const b = await req.json().catch(() => ({}));
   const pw = String(b.password || "");
-  if (pw && pw === (process.env.ADMIN_PASSWORD || "admin123")) {
+  if (await verifyAdminPassword(pw)) {
     await setAdminCookie();
     return NextResponse.json({ ok: true });
   }

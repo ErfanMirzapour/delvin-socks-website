@@ -64,8 +64,8 @@ export async function POST(req: Request) {
   }
 
   const tx = db.transaction(() => {
-    for (const it of items)
-      db.prepare("UPDATE products SET stock = stock - ? WHERE id=?").run(it.qty, it.product_id);
+    // NOTE: stock is NOT decremented here. It is decremented only when an
+    // admin marks the order "sent" (PATCH /api/orders/[id]).
     return db
       .prepare(
         "INSERT INTO orders (fullname, phone, address, postal_code, note, items_json, total) VALUES (?,?,?,?,?,?,?)"

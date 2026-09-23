@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useProducts } from "@/components/shop";
 import { useCart } from "@/lib/cart";
@@ -12,6 +12,15 @@ export default function Home() {
   const [cat, setCat] = useState<string>("all");
   const { data } = useProducts(cat);
   const { add } = useCart();
+  const [justAdded, setJustAdded] = useState<number | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleAdd(id: number) {
+    add(id);
+    setJustAdded(id);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setJustAdded(null), 1400);
+  }
   return (
     <div className="theme-v1 min-h-screen" style={{ background: "var(--bg)", color: "var(--ink)" }}>
       <div className="mx-auto max-w-6xl px-4 py-8">
@@ -41,10 +50,10 @@ export default function Home() {
                   {p.stock <= 0 ? <span className="font-black text-neutral-400">ناموجود</span>
                     : <span className="font-black" style={{ color: "#8a5a00" }}>{formatPrice(p.price)}</span>}
                 </div>
-                <button disabled={p.stock <= 0} onClick={() => add(p.id)}
-                  className="mt-3 w-full py-2.5 rounded-2xl font-bold text-sm disabled:opacity-40"
-                  style={{ background: "var(--accent)", color: "#fff" }}>
-                  {p.stock <= 0 ? "ناموجود" : "افزودن به سبد +"}
+                <button disabled={p.stock <= 0} onClick={() => handleAdd(p.id)}
+                  className={`mt-3 w-full py-2.5 rounded-2xl font-bold text-sm disabled:opacity-40 ${justAdded === p.id ? "btn-pop" : ""}`}
+                  style={justAdded === p.id ? { background: "#1a7f37", color: "#fff" } : { background: "var(--accent)", color: "#fff" }}>
+                  {p.stock <= 0 ? "ناموجود" : justAdded === p.id ? "✓ به سبد اضافه شد" : "افزودن به سبد +"}
                 </button>
               </div>
             </div>

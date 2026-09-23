@@ -1,21 +1,27 @@
 import { cookies } from "next/headers";
-import crypto from "crypto";
+import { getAdminPasswordHash, hashPassword } from "./db";
 
 const COOKIE = "socks_admin";
 
-function expectedToken(): string {
-  const pw = process.env.ADMIN_PASSWORD || "admin123";
-  return crypto.createHash("sha256").update("socks:" + pw).digest("hex");
+// The cookie token IS the stored password hash. Changing the password
+// invalidates all existing sessions (they must log in again).
+async function expectedToken(): Promise<string> {
+  return getAdminPasswordHash();
+}
+
+export async function verifyAdminPassword(pw: string): Promise<boolean> {
+  if (!pw) return false;
+  return hashPassword(pw) === getAdminPasswordHash();
 }
 
 export async function isAdmin(): Promise<boolean> {
   const jar = await cookies();
-  return jar.get(COOKIE)?.value === expectedToken();
+  return jar.get(COOKIE)?.value === (await expectedToken());
 }
 
 export async function setAdminCookie(): Promise<string> {
   const jar = await cookies();
-  const token = expectedToken();
+  const token = await expectedToken();
   jar.set(COOKIE, token, {
     httpOnly: true,
     path: "/",

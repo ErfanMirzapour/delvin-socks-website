@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import type { Product, Order } from "@/lib/catalog";
 import { categoryFa } from "@/lib/catalog";
 
-type Tab = "products" | "orders" | "help";
+type Tab = "products" | "orders";
 
 const emptyProduct = { title: "", category: "men", price: 0, stock: 0, image: "", description: "" };
 
@@ -17,6 +17,11 @@ export default function AdminPage() {
   const [msg, setMsg] = useState("");
   const [uploading, setUploading] = useState(false);
   const [openOrder, setOpenOrder] = useState<number | null>(null);
+  const [showPw, setShowPw] = useState(false);
+  const [curPw, setCurPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [newPw2, setNewPw2] = useState("");
+  const [pwMsg, setPwMsg] = useState("");
 
   async function loadProducts() {
     const r = await fetch("/api/products?category=all", { cache: "no-store" });
@@ -83,6 +88,29 @@ export default function AdminPage() {
     loadOrders();
   }
 
+  async function delOrder(id: number) {
+    if (!confirm("این سفارش حذف شود؟ (موجودیِ سفارشِ ارسال‌شده برنمی‌گردد)")) return;
+    const r = await fetch(`/api/orders/${id}`, { method: "DELETE" });
+    if (r.ok) { setOpenOrder(null); loadOrders(); }
+    else setMsg("خطا در حذف سفارش");
+  }
+
+  async function changePassword() {
+    setPwMsg("");
+    if (newPw !== newPw2) { setPwMsg("تکرار رمز جدید یکی نیست"); return; }
+    if (newPw.length < 6) { setPwMsg("رمز جدید حداقل ۶ کاراکتر باشد"); return; }
+    const r = await fetch("/api/admin/password", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ current: curPw, next: newPw }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok) {
+      setPwMsg("✓ رمز عوض شد");
+      setCurPw(""); setNewPw(""); setNewPw2("");
+    } else setPwMsg(j.error || "خطا در تغییر رمز");
+  }
+
   if (authed === null) return <div className="p-10 text-center text-neutral-500">…</div>;
 
   if (!authed) {
@@ -104,15 +132,32 @@ export default function AdminPage() {
     <div className="mx-auto max-w-3xl px-3 py-5 pb-20">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-black">🛠 پنل مدیریت</h1>
-        <button onClick={() => fetch("/api/login", { method: "DELETE" }).then(() => location.reload())}
-          className="text-xs underline text-neutral-500">خروج</button>
+        <div className="flex items-center gap-3">
+          <button onClick={() => { setShowPw(!showPw); setPwMsg(""); }}
+            className="text-xs underline text-neutral-500">تغییر رمز</button>
+          <button onClick={() => fetch("/api/login", { method: "DELETE" }).then(() => location.reload())}
+            className="text-xs underline text-neutral-500">خروج</button>
+        </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-3 gap-2 bg-neutral-100 rounded-2xl p-1.5 sticky top-2 z-10">
-        {(["products", "orders", "help"] as Tab[]).map((t) => (
+      {showPw && (
+        <div className="mt-3 rounded-2xl border bg-white p-4">
+          <div className="font-black text-sm mb-2">🔑 تغییر رمز مدیریت</div>
+          <div className="grid gap-2">
+            <input type="password" value={curPw} onChange={(e) => setCurPw(e.target.value)} placeholder="رمز فعلی" className={inp} />
+            <input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} placeholder="رمز جدید (حداقل ۶ کاراکتر)" className={inp} />
+            <input type="password" value={newPw2} onChange={(e) => setNewPw2(e.target.value)} placeholder="تکرار رمز جدید" className={inp} onKeyDown={(e) => e.key === "Enter" && changePassword()} />
+            {pwMsg && <div className="text-sm">{pwMsg}</div>}
+            <button onClick={changePassword} className="py-3 rounded-2xl bg-black text-white font-black text-sm">ثبت رمز جدید ✓</button>
+          </div>
+        </div>
+      )}
+
+      <div className="mt-4 grid grid-cols-2 gap-2 bg-neutral-100 rounded-2xl p-1.5 sticky top-2 z-10">
+        {(["products", "orders"] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={`py-2.5 rounded-xl font-black text-sm ${tab === t ? "bg-white shadow" : "text-neutral-500"}`}>
-            {t === "products" ? `محصولات (${products.length.toLocaleString("fa-IR")})` : t === "orders" ? `سفارش‌ها (${orders.length.toLocaleString("fa-IR")})` : "راهنما"}
+            {t === "products" ? `محصولات (${products.length.toLocaleString("fa-IR")})` : `سفارش‌ها (${orders.length.toLocaleString("fa-IR")})`}
           </button>
         ))}
       </div>
@@ -173,29 +218,11 @@ export default function AdminPage() {
                     </button>
                     <a href={`tel:${o.phone}`} className="px-5 py-2.5 rounded-xl border font-bold text-sm">تماس</a>
                   </div>
+                  <button onClick={() => delOrder(o.id)} className="mt-2 w-full py-2 rounded-xl border border-red-200 text-red-600 font-bold text-sm">🗑 حذف این سفارش</button>
                 </div>
               )}
             </div>
           ))}
-        </div>
-      )}
-
-      {tab === "help" && (
-        <div className="mt-4 space-y-3 text-sm leading-8">
-          <div className="rounded-2xl border bg-white p-4">
-            <div className="font-black mb-1">🤖 اعلان تلگرام (ربات)</div>
-            <ol className="list-decimal pr-5 space-y-1 text-neutral-700">
-              <li>به <code dir="ltr">@BotFather</code> پیام بدهید و <code dir="ltr">/newbot</code> را بزنید تا توکن بگیرید.</li>
-              <li>به ربات خودتان یک پیام بدهید، بعد <code dir="ltr">https://api.telegram.org/botTOKEN/getUpdates</code> را باز کنید تا <code dir="ltr">chat id</code> را ببینید.</li>
-              <li>در فایل <code dir="ltr">.env</code> این دو را بگذارید و سرور را ری‌استارت کنید:</li>
-            </ol>
-            <pre dir="ltr" className="mt-2 bg-neutral-900 text-green-300 rounded-xl p-3 text-xs overflow-x-auto">TELEGRAM_BOT_TOKEN=123:ABC{"\n"}TELEGRAM_CHAT_ID=987654321</pre>
-            <p className="mt-2 text-neutral-600">بعد از آن، هر سفارش جدید هم در پنل می‌آید هم فوری در تلگرام پیام می‌دهد (نام، تماس، آدرس، کدپستی، اقلام و جمع).</p>
-          </div>
-          <div className="rounded-2xl border bg-white p-4">
-            <div className="font-black mb-1">📦 قیمت و موجودی</div>
-            <p className="text-neutral-700">در تب محصولات روی «ویرایش» بزنید؛ قیمت و موجودی را عوض کنید. اگر موجودی صفر شود، در سایت به‌جای قیمت «ناموجود» نمایش داده می‌شود و دکمه خرید غیرفعال می‌شود.</p>
-          </div>
         </div>
       )}
 

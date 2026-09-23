@@ -18,6 +18,18 @@ body {
 /* hide number spinners */
 input[type="number"]::-webkit-inner-spin-button { opacity: 1; }
 
+/* clickable affordance everywhere */
+button, [role="button"] { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+
+/* little pop when an item is added to the cart */
+@keyframes addpop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+.btn-pop { animation: addpop .35s ease; }
+
 /* ——— 5 design tokens ——— */
 .theme-v1 { --bg:#FBF6EE; --ink:#3E2A20; --accent:#D9A441; --card:#FFFDF7; --line:#E7DCC8; }
 .theme-v2 { --bg:#FFFDF5; --ink:#191817; --accent:#FF4D6D; --card:#ffffff; --line:#191817; }

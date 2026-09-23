@@ -6,10 +6,12 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const cat = searchParams.get("category");
   const db = getDb();
+  // In-stock first, out-of-stock last; newest first within each group.
+  const ORDER = "ORDER BY (stock > 0) DESC, id DESC";
   const rows =
     cat && cat !== "all"
-      ? db.prepare("SELECT * FROM products WHERE category=? ORDER BY id DESC").all(cat)
-      : db.prepare("SELECT * FROM products ORDER BY id DESC").all();
+      ? db.prepare(`SELECT * FROM products WHERE category=? ${ORDER}`).all(cat)
+      : db.prepare(`SELECT * FROM products ${ORDER}`).all();
   return NextResponse.json(rows);
 }
 

@@ -16,7 +16,6 @@ export default function Header() {
         <nav className="flex items-center gap-1 text-sm">
           <Link className="px-3 py-2 rounded-full hover:bg-black/5" href="/">فروشگاه</Link>
           <Link className="px-3 py-2 rounded-full hover:bg-black/5" href="/about">درباره ما</Link>
-          <Link className="px-3 py-2 rounded-full hover:bg-black/5" href="/admin">پنل</Link>
           <Link
             href="/cart"
             className="relative px-4 py-2 rounded-full bg-black text-white font-bold"

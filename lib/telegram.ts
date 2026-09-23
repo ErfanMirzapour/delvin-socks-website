@@ -7,6 +7,13 @@ export function telegramConfigured(): boolean {
 }
 
 export async function notifyTelegram(order: Order): Promise<boolean> {
+  // Production-only: never message from dev machines. Override with
+  // TELEGRAM_NOTIFY_IN_DEV=true for an explicit manual test.
+  if (
+    process.env.NODE_ENV !== "production" &&
+    process.env.TELEGRAM_NOTIFY_IN_DEV !== "true"
+  )
+    return false;
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
   if (!token || !chatId) return false;

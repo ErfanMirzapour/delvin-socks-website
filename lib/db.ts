@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 import type { Category } from "./catalog";
 
 export type { Category, Product, Order, OrderItem } from "./catalog";
@@ -8,11 +9,31 @@ export { categoryFa } from "./catalog";
 
 let db: Database.Database | null = null;
 
+// Same scheme as the admin cookie token: sha256("socks:" + password).
+export function hashPassword(pw: string): string {
+  return crypto.createHash("sha256").update("socks:" + pw).digest("hex");
+}
+
+function resolveDbPath(): string {
+  const custom = process.env.DB_PATH;
+  if (custom)
+    return path.isAbsolute(custom) ? custom : path.join(process.cwd(), custom);
+  return path.join(process.cwd(), "data", "shop.db");
+}
+
+// Seed sample products in dev by default. Production starts EMPTY —
+// override with DB_SEED=true/false explicitly if needed.
+function shouldSeed(): boolean {
+  if (process.env.DB_SEED === "true") return true;
+  if (process.env.DB_SEED === "false") return false;
+  return process.env.NODE_ENV !== "production";
+}
+
 export function getDb(): Database.Database {
   if (db) return db;
-  const dataDir = path.join(process.cwd(), "data");
-  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-  const dbPath = path.join(dataDir, "shop.db");
+  const dbPath = resolveDbPath();
+  const dir = path.dirname(dbPath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   db = new Database(dbPath);
   db.pragma("journal_mode = WAL");
   db.exec(`
@@ -38,9 +59,44 @@ export function getDb(): Database.Database {
       status TEXT NOT NULL DEFAULT 'new',
       created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
     );
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL DEFAULT ''
+    );
   `);
-  seedIfEmpty(db);
+  ensureAdminPassword(db);
+  if (shouldSeed()) seedIfEmpty(db);
   return db;
+}
+
+// First run (or fresh DB): bootstrap the admin hash from ADMIN_PASSWORD env.
+// After that the panel's "change password" owns the value — env is ignored.
+function ensureAdminPassword(database: Database.Database) {
+  const row = database
+    .prepare("SELECT value FROM settings WHERE key='admin_password_hash'")
+    .get() as { value: string } | undefined;
+  if (!row) {
+    database
+      .prepare("INSERT INTO settings (key, value) VALUES ('admin_password_hash', ?)")
+      .run(hashPassword(process.env.ADMIN_PASSWORD || "admin123"));
+  }
+}
+
+export function getAdminPasswordHash(): string {
+  const row = getDb()
+    .prepare("SELECT value FROM settings WHERE key='admin_password_hash'")
+    .get() as { value: string } | undefined;
+  if (row) return row.value;
+  // Should not happen (ensureAdminPassword runs in getDb), fallback to env:
+  return hashPassword(process.env.ADMIN_PASSWORD || "admin123");
+}
+
+export function setAdminPasswordHash(hash: string) {
+  getDb()
+    .prepare(
+      "INSERT OR REPLACE INTO settings (key, value) VALUES ('admin_password_hash', ?)"
+    )
+    .run(hash);
 }
 
 function seedIfEmpty(database: Database.Database) {
