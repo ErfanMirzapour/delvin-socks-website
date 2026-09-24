@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ensureSchema } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
-import { deleteUploadByUrl } from "@/lib/r2";
+import { deleteUploadByUrl } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 

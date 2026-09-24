@@ -8,7 +8,7 @@ Live design: **v1 "Warm Bazaar"** is the main storefront at `/` (`/v1` redirects
 
 - Next.js 16 App Router + React 19, deployed on **Cloudflare Workers** via `@opennextjs/cloudflare` (free tier)
 - **Cloudflare D1** (SQLite-compatible) for products/orders/settings — local emulation in dev, remote D1 in production
-- **Cloudflare R2** for product photo uploads (served via `/img/...`)
+- **Supabase Storage** (free tier, no credit card) as origin for product photos, served via `/img/...` proxy
 - Tailwind CSS 4, Vazirmatn font, `lang="fa" dir="rtl"`
 - Cart in `localStorage` (`socks_cart_v1`)
 - Admin auth via password hash in DB + httpOnly cookie `socks_admin`
@@ -47,6 +47,9 @@ All in `.env` (gitignored, never committed):
 | `TELEGRAM_NOTIFY_IN_DEV` | no | Set `true` only for an explicit dev notify test. Default: notify in production only |
 | `NEXT_PUBLIC_SHOP_PHONE` | yes | Shop phone shown in footer + About + success page |
 | `NEXT_PUBLIC_TELEGRAM_CHANNEL` | no | Public channel link, e.g. `https://t.me/delvin_socks` |
+| `SUPABASE_URL` | for photo uploads | e.g. `https://xyz.supabase.co` (Project Settings → Data API) |
+| `SUPABASE_SERVICE_KEY` | for photo uploads | `service_role` key (Project Settings → API Keys — keep secret!) |
+| `SUPABASE_BUCKET` | no | Bucket name (default `product-images` — create it in Supabase Storage, private is fine) |
 | `DB_SEED` | no | `true`/`false`. Default: seed samples in dev, no seed in production |
 
 Locally these come from `.env`. **In production they must be Worker secrets/vars** (`.env` is never uploaded):
@@ -65,6 +68,9 @@ TELEGRAM_BOT_TOKEN=123456:ABC-DEF...
 TELEGRAM_CHAT_ID=987654321
 NEXT_PUBLIC_SHOP_PHONE=0912-000-0000
 NEXT_PUBLIC_TELEGRAM_CHANNEL=https://t.me/your_channel
+SUPABASE_URL=https://xyz.supabase.co
+SUPABASE_SERVICE_KEY=eyJ...
+SUPABASE_BUCKET=product-images
 ```
 
 ## Telegram notifications (one message per order, production only)
@@ -89,7 +95,7 @@ Notes:
 Not linked from the site header — open the URL directly. Login with the admin password (first run: `ADMIN_PASSWORD` from `.env`, default `admin123`).
 
 - **تغییر رمز** (next to logout): change the password without touching `.env`. You stay logged in; all other sessions are logged out.
-- Products tab: add / edit / delete, set price (تومان) and stock. `stock = 0` → storefront shows ناموجود and the item sinks to the end of the list. Image via mobile upload (R2, 3 MB max) or direct URL. Deleting a product also deletes its uploaded photo.
+- Products tab: add / edit / delete, set price (تومان) and stock. `stock = 0` → storefront shows ناموجود and the item sinks to the end of the list. Image via mobile upload (Supabase, 3 MB max) or direct URL. Deleting a product also deletes its uploaded photo.
 - Orders tab: list (newest first), expand for details, toggle status `new` / `sent`, tap-to-call customer, 🗑 delete order.
 
 ## Stock & order lifecycle
@@ -103,17 +109,21 @@ Not linked from the site header — open the URL directly. Login with the admin 
 - **D1** (SQLite API). Tables: `products`, `orders`, `settings` (admin password hash). Schema is ensured by the app on first request — no manual migration needed.
 - Dev (`npm run dev`): local D1 emulation (state in `.wrangler/`, gitignored), auto-seeds 9 sample products on an empty DB.
 - Production: remote D1, starts **empty** — add real products via `/admin`.
-- Product photos live in the **R2** bucket `delvin-socks-uploads`, served via `/img/...` (local R2 emulation in dev).
+- Product photos live in **Supabase Storage** (free 1 GB, no credit card), served via `/img/...` (local emulation in dev).
 
-## Deploy to Cloudflare (one-time setup, all free)
+## Deploy to Cloudflare (one-time setup, all free, no credit card)
+
+1. Create a free Supabase project (no card needed) → Storage → New bucket `product-images` (private is fine).
+2. Project Settings → Data API → copy the URL + `service_role` key.
 
 ```bash
 npx wrangler login
 npx wrangler d1 create delvin-socks-db        # copy database_id into wrangler.jsonc
-npx wrangler r2 bucket create delvin-socks-uploads
 npx wrangler secret put ADMIN_PASSWORD
 npx wrangler secret put TELEGRAM_BOT_TOKEN
 npx wrangler secret put TELEGRAM_CHAT_ID
+npx wrangler secret put SUPABASE_URL
+npx wrangler secret put SUPABASE_SERVICE_KEY
 npm run deploy
 ```
 

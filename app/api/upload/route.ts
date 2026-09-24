@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
-import { uploadsBucket } from "@/lib/r2";
+import { uploadImage } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
@@ -16,9 +16,11 @@ export async function POST(req: Request) {
   if (bytes.byteLength > 3 * 1024 * 1024)
     return NextResponse.json({ error: "حجم عکس حداکثر ۳ مگابایت" }, { status: 400 });
   const ext = (file.name.split(".").pop() || "jpg").slice(0, 5).replace(/[^a-zA-Z0-9]/g, "") || "jpg";
-  const key = `uploads/${Date.now()}-${Math.floor(Math.random() * 1e6)}.${ext}`;
-  await uploadsBucket().put(key, bytes, {
-    httpMetadata: { contentType: file.type || "image/jpeg" },
-  });
-  return NextResponse.json({ url: `/img/${key}` });
+  const name = `${Date.now()}-${Math.floor(Math.random() * 1e6)}.${ext}`;
+  try {
+    await uploadImage(name, bytes, file.type || "image/jpeg");
+  } catch {
+    return NextResponse.json({ error: "خطا در آپلود عکس" }, { status: 500 });
+  }
+  return NextResponse.json({ url: `/img/${name}` });
 }

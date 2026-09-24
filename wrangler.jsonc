@@ -11,16 +11,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      // Remote database id is filled in after `wrangler d1 create` (see README).
-      // Local dev/preview uses a local emulation automatically.
       "database_name": "delvin-socks-db",
-      "database_id": "local"
-    }
-  ],
-  "r2_buckets": [
-    {
-      "binding": "UPLOADS",
-      "bucket_name": "delvin-socks-uploads"
+      "database_id": "8d537aba-79e4-4ff2-960d-752843b118af"
     }
   ]
 }

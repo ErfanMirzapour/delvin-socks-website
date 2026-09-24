@@ -1,22 +1,27 @@
-import { uploadsBucket } from "@/lib/r2";
+import { getImage } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
-// Public read for product photos stored in the UPLOADS R2 bucket.
+// Public read for product photos (origin: Supabase Storage, proxied so the
+// bucket stays private and URLs stay on our own domain).
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ key: string[] }> }
 ) {
   const { key } = await params;
   const name = key.join("/");
-  if (!name || name.includes(".."))
+  if (!name || name.includes("..") || name.includes("/"))
     return new Response("not found", { status: 404 });
-  const obj = await uploadsBucket().get(name);
-  if (!obj) return new Response("not found", { status: 404 });
-  return new Response(obj.body, {
+  let img;
+  try {
+    img = await getImage(name);
+  } catch {
+    return new Response("not found", { status: 404 });
+  }
+  if (!img) return new Response("not found", { status: 404 });
+  return new Response(img.body, {
     headers: {
-      "Content-Type":
-        obj.httpMetadata?.contentType || "application/octet-stream",
+      "Content-Type": img.contentType,
       "Cache-Control": "public, max-age=31536000, immutable",
     },
   });
