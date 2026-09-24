@@ -5,9 +5,12 @@ import { secret } from "./db";
 // private and image URLs keep working even if the backend ever changes.
 
 function cfg() {
-  const url = secret("SUPABASE_URL").replace(/\/$/, "");
-  const key = secret("SUPABASE_SERVICE_KEY");
-  const bucket = secret("SUPABASE_BUCKET", "product-images");
+  // Be liberal: users often paste the URL with whitespace, a trailing slash,
+  // or even a full ".../storage/v1" endpoint — normalize to the bare base.
+  let url = secret("SUPABASE_URL").trim().replace(/\/+$/, "");
+  url = url.replace(/\/storage\/v1\/?$/, "");
+  const key = secret("SUPABASE_SERVICE_KEY").trim();
+  const bucket = secret("SUPABASE_BUCKET", "product-images").trim();
   if (!url || !key)
     throw new Error("SUPABASE_URL / SUPABASE_SERVICE_KEY missing");
   return { url, key, bucket };
@@ -23,21 +26,22 @@ export async function uploadImage(
   contentType: string
 ): Promise<void> {
   const { url, key, bucket } = cfg();
-  const res = await fetch(
-    `${url}/storage/v1/object/${bucket}/${encodeURIComponent(name)}`,
-    {
-      method: "POST",
-      headers: {
-        ...authHeaders(key),
-        "Content-Type": contentType,
-        "x-upsert": "false",
-      },
-      body: data,
-    }
-  );
+  const target = `${url}/storage/v1/object/${bucket}/${encodeURIComponent(name)}`;
+  const res = await fetch(target, {
+    method: "POST",
+    headers: {
+      ...authHeaders(key),
+      "Content-Type": contentType,
+      "x-upsert": "false",
+    },
+    body: data,
+  });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(`upload failed (${res.status}): ${body.slice(0, 200)}`);
+    // Admin-only surface: base URL (no secrets in it) included for diagnosis.
+    throw new Error(
+      `upload failed (${res.status}) @ ${url}: ${body.slice(0, 200)}`
+    );
   }
 }
 
