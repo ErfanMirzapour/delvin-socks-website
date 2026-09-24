@@ -19,8 +19,10 @@ export async function POST(req: Request) {
   const name = `${Date.now()}-${Math.floor(Math.random() * 1e6)}.${ext}`;
   try {
     await uploadImage(name, bytes, file.type || "image/jpeg");
-  } catch {
-    return NextResponse.json({ error: "خطا در آپلود عکس" }, { status: 500 });
+  } catch (e) {
+    // Admin-only route: surfacing the backend message is safe and debuggable.
+    const msg = e instanceof Error ? e.message : "خطا در آپلود عکس";
+    return NextResponse.json({ error: `خطا در آپلود عکس (${msg})` }, { status: 500 });
   }
   return NextResponse.json({ url: `/img/${name}` });
 }

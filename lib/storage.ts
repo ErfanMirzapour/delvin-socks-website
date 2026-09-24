@@ -35,7 +35,10 @@ export async function uploadImage(
       body: data,
     }
   );
-  if (!res.ok) throw new Error(`upload failed (${res.status})`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`upload failed (${res.status}): ${body.slice(0, 200)}`);
+  }
 }
 
 export async function getImage(
