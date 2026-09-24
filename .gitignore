@@ -42,7 +42,6 @@ data/*.db-wal
 .open-next
 .dev.vars
 .wrangler
-worker-configuration.d.ts
 
 # vercel
 .vercel
