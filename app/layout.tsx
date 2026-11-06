@@ -1,26 +1,27 @@
 import type { Metadata } from "next";
-import { Vazirmatn } from "next/font/google";
+// Fonts are bundled from npm (Fontsource) instead of next/font/google:
+// the Cloudflare build can't download Google Fonts reliably.
+import "@fontsource-variable/vazirmatn/index.css";
+import "@fontsource/el-messiri/arabic-500.css";
+import "@fontsource/el-messiri/arabic-600.css";
+import "@fontsource/el-messiri/arabic-700.css";
+import "@fontsource/el-messiri/latin-500.css";
+import "@fontsource/el-messiri/latin-600.css";
+import "@fontsource/el-messiri/latin-700.css";
 import "./globals.css";
+import "./knit.css";
 import { CartProvider } from "@/lib/cart";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-
-const vazir = Vazirmatn({ subsets: ["arabic", "latin"], weight: ["400", "500", "700", "900"] });
 
 export const metadata: Metadata = {
-  title: "Delvin Socks | جوراب‌فروشی",
-  description: "فروشگاه جوراب مردانه، زنانه و بچگانه — ثبت سفارش با ارسال پستی",
+  title: "دلوین | جوراب گرم خانگی",
+  description: "جوراب‌های گرم و نرم مردانه، زنانه و بچگانه — ثبت سفارش و ارسال با پست",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fa" dir="rtl">
-      <body className={`${vazir.className} min-h-screen flex flex-col`}>
-        <CartProvider>
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </CartProvider>
+      <body className="knit min-h-screen flex flex-col">
+        <CartProvider>{children}</CartProvider>
       </body>
     </html>
   );

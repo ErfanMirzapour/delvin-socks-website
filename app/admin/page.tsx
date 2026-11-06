@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import type { Product, Order } from "@/lib/catalog";
 import { categoryFa } from "@/lib/catalog";
+import { Logo, Photo } from "../(shop)/_ui";
 
 type Tab = "products" | "orders";
 
@@ -111,73 +113,83 @@ export default function AdminPage() {
     } else setPwMsg(j.error || "خطا در تغییر رمز");
   }
 
-  if (authed === null) return <div className="p-10 text-center text-neutral-500">…</div>;
+  if (authed === null) return <div className="p-10 text-center text-[var(--soft)]">…</div>;
 
   if (!authed) {
     return (
-      <div className="mx-auto max-w-sm px-4 py-16">
-        <h1 className="text-2xl font-black text-center">🔐 ورود به پنل</h1>
-        <p className="text-center text-sm text-neutral-500 mt-2 leading-7">رمز پیش‌فرض <code dir="ltr">admin123</code> است — در <code dir="ltr">.env</code> عوضش کنید.</p>
-        <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} onKeyDown={(e) => e.key === "Enter" && login()}
-          placeholder="رمز مدیریت" className="mt-6 w-full rounded-2xl border px-4 py-3" />
-        {msg && <div className="mt-3 text-sm text-red-600">{msg}</div>}
-        <button onClick={login} className="mt-3 w-full py-3 rounded-2xl bg-black text-white font-black">ورود</button>
+      <div className="mx-auto w-full max-w-sm px-4 py-16">
+        <div className="soft-card p-7 text-center">
+          <Logo />
+          <h1 className="hand text-3xl mt-5">ورود به پنل</h1>
+          <p className="text-sm text-[var(--soft)] mt-2 leading-7">رمز پیش‌فرض <code dir="ltr">admin123</code> است — بعد از ورود عوضش کنید.</p>
+          <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} onKeyDown={(e) => e.key === "Enter" && login()}
+            placeholder="رمز مدیریت" className="mt-6" />
+          {msg && <div className="mt-3 text-sm text-[#8f2f17] font-bold">{msg}</div>}
+          <button onClick={login} className="btn w-full mt-4">ورود</button>
+        </div>
       </div>
     );
   }
 
-  const inp = "w-full rounded-2xl border px-4 py-3 bg-white text-[15px]";
+  const L = "grid gap-1.5 text-sm font-bold";
+  const ghost = "rounded-full px-4 py-2 text-sm font-bold bg-[var(--bg)] hover:bg-white";
 
   return (
-    <div className="mx-auto max-w-3xl px-3 py-5 pb-20">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-black">🛠 پنل مدیریت</h1>
+    <div className="mx-auto w-full max-w-3xl px-3 py-5 pb-20">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <div className="flex items-center gap-3">
-          <button onClick={() => { setShowPw(!showPw); setPwMsg(""); }}
-            className="text-xs underline text-neutral-500">تغییر رمز</button>
-          <button onClick={() => fetch("/api/login", { method: "DELETE" }).then(() => location.reload())}
-            className="text-xs underline text-neutral-500">خروج</button>
+          <Logo />
+          <span className="tag text-xs font-bold text-[var(--terra)] whitespace-nowrap">پنل مدیریت</span>
+        </div>
+        <div className="flex items-center gap-4 text-xs font-bold text-[var(--soft)] whitespace-nowrap">
+          <Link href="/" className="hover:text-[var(--ink)]">فروشگاه ↗</Link>
+          <button onClick={() => { setShowPw(!showPw); setPwMsg(""); }} className="hover:text-[var(--ink)]">تغییر رمز</button>
+          <button onClick={() => fetch("/api/login", { method: "DELETE" }).then(() => location.reload())} className="hover:text-[var(--ink)]">خروج</button>
         </div>
       </div>
 
       {showPw && (
-        <div className="mt-3 rounded-2xl border bg-white p-4">
-          <div className="font-black text-sm mb-2">🔑 تغییر رمز مدیریت</div>
-          <div className="grid gap-2">
-            <input type="password" value={curPw} onChange={(e) => setCurPw(e.target.value)} placeholder="رمز فعلی" className={inp} />
-            <input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} placeholder="رمز جدید (حداقل ۶ کاراکتر)" className={inp} />
-            <input type="password" value={newPw2} onChange={(e) => setNewPw2(e.target.value)} placeholder="تکرار رمز جدید" className={inp} onKeyDown={(e) => e.key === "Enter" && changePassword()} />
-            {pwMsg && <div className="text-sm">{pwMsg}</div>}
-            <button onClick={changePassword} className="py-3 rounded-2xl bg-black text-white font-black text-sm">ثبت رمز جدید ✓</button>
+        <div className="mt-4 soft-card p-5">
+          <div className="hand text-xl mb-3">تغییر رمز مدیریت</div>
+          <div className="grid gap-2.5">
+            <input type="password" value={curPw} onChange={(e) => setCurPw(e.target.value)} placeholder="رمز فعلی" />
+            <input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} placeholder="رمز جدید (حداقل ۶ کاراکتر)" />
+            <input type="password" value={newPw2} onChange={(e) => setNewPw2(e.target.value)} placeholder="تکرار رمز جدید" onKeyDown={(e) => e.key === "Enter" && changePassword()} />
+            {pwMsg && <div className="text-sm font-bold">{pwMsg}</div>}
+            <button onClick={changePassword} className="btn btn-forest">ثبت رمز جدید ✓</button>
           </div>
         </div>
       )}
 
-      <div className="mt-4 grid grid-cols-2 gap-2 bg-neutral-100 rounded-2xl p-1.5 sticky top-2 z-10">
+      <div className="mt-5 grid grid-cols-2 gap-1 bg-[var(--paper)] rounded-full p-1.5 sticky top-2 z-10 shadow-[0_10px_24px_-18px_rgba(58,42,32,.5)]">
         {(["products", "orders"] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)}
-            className={`py-2.5 rounded-xl font-black text-sm ${tab === t ? "bg-white shadow" : "text-neutral-500"}`}>
-            {t === "products" ? `محصولات (${products.length.toLocaleString("fa-IR")})` : `سفارش‌ها (${orders.length.toLocaleString("fa-IR")})`}
+            className={`py-2.5 rounded-full font-bold text-sm transition ${tab === t ? "bg-[var(--ink)] text-[var(--paper)]" : "text-[var(--soft)]"}`}>
+            {t === "products" ? `🧦 محصولات (${products.length.toLocaleString("fa-IR")})` : `📦 سفارش‌ها (${orders.length.toLocaleString("fa-IR")})`}
           </button>
         ))}
       </div>
 
-      {msg && <div className="mt-3 text-sm bg-red-50 border border-red-200 rounded-2xl p-3">{msg}</div>}
+      {msg && <div className="mt-3 rounded-2xl bg-[#f6d5cb] text-[#8f2f17] p-3 text-sm font-bold">{msg}</div>}
 
       {tab === "products" && (
         <div className="mt-4">
-          <button onClick={() => setEditing({ ...emptyProduct })} className="w-full py-3.5 rounded-2xl bg-black text-white font-black">+ افزودن محصول</button>
-          <div className="mt-3 space-y-2">
+          <button onClick={() => setEditing({ ...emptyProduct })} className="btn w-full text-lg">+ افزودن جوراب</button>
+          <div className="mt-4 space-y-3">
             {products.map((p) => (
-              <div key={p.id} className="rounded-2xl border bg-white p-3 flex gap-3 items-center">
-                <img src={p.image || "/socks/sock-1.svg"} alt="" className="w-16 h-16 rounded-xl object-cover border" />
+              <div key={p.id} className="soft-card p-3 flex gap-3 items-center">
+                <Photo p={p} className="w-16 h-16 rounded-[16px] shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <div className="font-black truncate">{p.title}</div>
-                  <div className="text-xs text-neutral-500">{categoryFa(p.category)} • {p.price.toLocaleString("fa-IR")} ت • موجودی {p.stock.toLocaleString("fa-IR")} {p.stock <= 0 && <b className="text-red-600">(ناموجود)</b>}</div>
+                  <div className="hand text-lg truncate">{p.title}</div>
+                  <div className="text-xs text-[var(--soft)] leading-6">
+                    {categoryFa(p.category)} · {p.price.toLocaleString("fa-IR")} تومان · موجودی {p.stock.toLocaleString("fa-IR")}
+                    {p.stock <= 0 && <b className="text-[var(--terra)]"> (ناموجود)</b>}
+                    {!p.image && <span className="text-[var(--terra)]"> · بدون عکس</span>}
+                  </div>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <button onClick={() => setEditing({ ...p })} className="px-4 py-1.5 rounded-xl border text-sm font-bold">ویرایش</button>
-                  <button onClick={() => delProduct(p.id)} className="px-4 py-1.5 rounded-xl border border-red-200 text-red-600 text-sm font-bold">حذف</button>
+                  <button onClick={() => setEditing({ ...p })} className={ghost}>ویرایش</button>
+                  <button onClick={() => delProduct(p.id)} className="rounded-full px-4 py-2 text-sm font-bold text-[var(--terra)] hover:bg-[#f6d5cb]">حذف</button>
                 </div>
               </div>
             ))}
@@ -186,39 +198,39 @@ export default function AdminPage() {
       )}
 
       {tab === "orders" && (
-        <div className="mt-4 space-y-2">
-          {orders.length === 0 && <div className="rounded-2xl border p-8 text-center text-neutral-500">هنوز سفارشی ثبت نشده.</div>}
+        <div className="mt-4 space-y-3">
+          {orders.length === 0 && <div className="soft-card p-10 text-center hand text-xl text-[var(--soft)]">هنوز سفارشی ثبت نشده.</div>}
           {orders.map((o) => (
-            <div key={o.id} className="rounded-2xl border bg-white overflow-hidden">
+            <div key={o.id} className="soft-card overflow-hidden">
               <button onClick={() => setOpenOrder(openOrder === o.id ? null : o.id)} className="w-full p-4 text-right">
                 <div className="flex justify-between items-center gap-2">
                   <span className="font-black">#{o.id.toLocaleString("fa-IR")} — {o.fullname}</span>
-                  <span className={`text-xs font-black px-3 py-1 rounded-full ${o.status === "new" ? "bg-amber-100 text-amber-800" : "bg-green-100 text-green-800"}`}>
+                  <span className={`text-xs font-bold px-3 py-1 rounded-full ${o.status === "new" ? "bg-[var(--mustard)]/30 text-[#7a5410]" : "bg-[var(--forest)] text-[var(--paper)]"}`}>
                     {o.status === "new" ? "جدید" : "ارسال شد"}
                   </span>
                 </div>
-                <div className="text-xs text-neutral-500 mt-1" dir="ltr">{o.phone} • {o.total.toLocaleString("fa-IR")} ت</div>
+                <div className="text-xs text-[var(--soft)] mt-1" dir="ltr">{o.phone} · {o.total.toLocaleString("fa-IR")} ت</div>
               </button>
               {openOrder === o.id && (
-                <div className="px-4 pb-4 text-sm leading-8 border-t pt-3">
+                <div className="px-4 pb-4 text-sm leading-8 border-t border-dashed border-[#e3d6c2] pt-3">
                   <div>📞 <b dir="ltr">{o.phone}</b></div>
                   <div>📍 {o.address}</div>
                   <div>📮 کدپستی: <b>{o.postal_code}</b></div>
                   {o.note && <div>📝 {o.note}</div>}
-                  <div className="mt-2 bg-neutral-50 rounded-xl p-3">
+                  <div className="mt-2 bg-[var(--bg)] rounded-2xl p-3">
                     {o.items.map((it, i) => (
-                      <div key={i} className="flex justify-between"><span>{it.title} × {it.qty.toLocaleString("fa-IR")}</span><span>{(it.price * it.qty).toLocaleString("fa-IR")}</span></div>
+                      <div key={i} className="flex justify-between gap-3"><span>{it.title} × {it.qty.toLocaleString("fa-IR")}</span><span>{(it.price * it.qty).toLocaleString("fa-IR")}</span></div>
                     ))}
-                    <div className="flex justify-between font-black border-t mt-2 pt-2"><span>جمع</span><span>{o.total.toLocaleString("fa-IR")} تومان</span></div>
+                    <div className="flex justify-between font-black border-t border-dashed border-[#d9c9b1] mt-2 pt-2"><span>جمع</span><span>{o.total.toLocaleString("fa-IR")} تومان</span></div>
                   </div>
-                  <div className="text-xs text-neutral-400">{o.created_at}</div>
-                  <div className="mt-2 flex gap-2">
-                    <button onClick={() => setStatus(o.id, o.status === "new" ? "sent" : "new")} className="flex-1 py-2.5 rounded-xl bg-black text-white font-bold text-sm">
+                  <div className="text-xs text-[var(--soft)]">{o.created_at}</div>
+                  <div className="mt-3 flex gap-2">
+                    <button onClick={() => setStatus(o.id, o.status === "new" ? "sent" : "new")} className={`btn flex-1 text-sm ${o.status === "new" ? "btn-forest" : ""}`}>
                       {o.status === "new" ? "✓ علامت «ارسال شد»" : "↩ برگردان به «جدید»"}
                     </button>
-                    <a href={`tel:${o.phone}`} className="px-5 py-2.5 rounded-xl border font-bold text-sm">تماس</a>
+                    <a href={`tel:${o.phone}`} className={`${ghost} grid place-items-center`}>تماس</a>
                   </div>
-                  <button onClick={() => delOrder(o.id)} className="mt-2 w-full py-2 rounded-xl border border-red-200 text-red-600 font-bold text-sm">🗑 حذف این سفارش</button>
+                  <button onClick={() => delOrder(o.id)} className="mt-2 w-full py-2 rounded-full text-[var(--terra)] font-bold text-sm hover:bg-[#f6d5cb]">🗑 حذف این سفارش</button>
                 </div>
               )}
             </div>
@@ -227,36 +239,37 @@ export default function AdminPage() {
       )}
 
       {editing && (
-        <div className="fixed inset-0 z-50 bg-black/50 p-3 grid items-end md:items-center justify-items-center" onClick={() => setEditing(null)}>
-          <div className="w-full max-w-lg bg-[#FFFDF8] rounded-3xl p-5 max-h-[92dvh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="font-black text-lg">{editing.id ? "ویرایش محصول" : "محصول جدید"}</div>
-            <div className="mt-3 grid gap-3">
-              <label className="block text-sm font-bold">عنوان<input className={inp} value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} /></label>
+        <div className="fixed inset-0 z-50 bg-[#3a2a20]/50 p-3 grid items-end md:items-center justify-items-center" onClick={() => setEditing(null)}>
+          <div className="w-full max-w-lg bg-[var(--paper)] rounded-[28px] p-5 max-h-[92dvh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="hand text-2xl">{editing.id ? "ویرایش جوراب" : "جوراب جدید"}</div>
+            <div className="knit !h-2.5 my-3" style={{ ["--c" as string]: "#e3d6c2" }} />
+            <div className="grid gap-3">
+              <label className={L}>عنوان<input value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} /></label>
               <div className="grid grid-cols-2 gap-3">
-                <label className="block text-sm font-bold">دسته
-                  <select className={inp} value={editing.category} onChange={(e) => setEditing({ ...editing, category: e.target.value })}>
+                <label className={L}>دسته
+                  <select className="w-full bg-white border-2 border-[#e3d6c2] rounded-2xl px-4 py-3 outline-none focus:border-[var(--terra)]" value={editing.category} onChange={(e) => setEditing({ ...editing, category: e.target.value })}>
                     <option value="men">مردانه</option><option value="women">زنانه</option><option value="kids">بچگانه</option>
                   </select></label>
-                <label className="block text-sm font-bold">قیمت (تومان)<input type="number" className={inp} value={editing.price} onChange={(e) => setEditing({ ...editing, price: Number(e.target.value) })} /></label>
+                <label className={L}>قیمت (تومان)<input type="number" value={editing.price} onChange={(e) => setEditing({ ...editing, price: Number(e.target.value) })} /></label>
               </div>
-              <label className="block text-sm font-bold">موجودی (تعداد)<input type="number" className={inp} value={editing.stock} onChange={(e) => setEditing({ ...editing, stock: Number(e.target.value) })} /></label>
-              <div className="text-sm font-bold">عکس
-                <div className="flex gap-2 items-center mt-1">
-                  {editing.image && <img src={editing.image} alt="" className="w-14 h-14 rounded-xl object-cover border" />}
-                  <label className="flex-1 text-center py-3 rounded-2xl border border-dashed font-bold cursor-pointer bg-white">
-                    {uploading ? "در حال آپلود…" : "📷 انتخاب از گوشی"}
+              <label className={L}>موجودی (تعداد جفت)<input type="number" value={editing.stock} onChange={(e) => setEditing({ ...editing, stock: Number(e.target.value) })} /></label>
+              <div className={L}>عکس
+                <div className="flex gap-2 items-center">
+                  {editing.image && <img src={editing.image} alt="" className="w-16 h-16 rounded-[16px] object-cover" />}
+                  <label className="flex-1 text-center py-3.5 rounded-2xl border-2 border-dashed border-[#d9c9b1] font-bold cursor-pointer bg-white hover:border-[var(--terra)]">
+                    {uploading ? "در حال آپلود…" : "📷 انتخاب عکس از گوشی"}
                     <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                       const f = e.target.files?.[0]; if (!f) return;
                       const url = await uploadFile(f); if (url) setEditing((ed) => ed ? { ...ed, image: url } : ed);
                     }} />
                   </label>
                 </div>
-                <input className={inp + " mt-2"} value={editing.image} onChange={(e) => setEditing({ ...editing, image: e.target.value })} placeholder="یا لینک عکس…" dir="ltr" />
+                <input value={editing.image} onChange={(e) => setEditing({ ...editing, image: e.target.value })} placeholder="یا لینک عکس…" dir="ltr" />
               </div>
-              <label className="block text-sm font-bold">توضیح<textarea className={inp} rows={2} value={editing.description} onChange={(e) => setEditing({ ...editing, description: e.target.value })} /></label>
-              <div className="flex gap-2">
-                <button onClick={saveProduct} className="flex-1 py-3.5 rounded-2xl bg-black text-white font-black">ذخیره ✓</button>
-                <button onClick={() => setEditing(null)} className="px-6 py-3.5 rounded-2xl border font-bold">بستن</button>
+              <label className={L}>توضیح<textarea rows={2} value={editing.description} onChange={(e) => setEditing({ ...editing, description: e.target.value })} /></label>
+              <div className="flex gap-2 mt-1">
+                <button onClick={saveProduct} className="btn flex-1">ذخیره ✓</button>
+                <button onClick={() => setEditing(null)} className={ghost}>بستن</button>
               </div>
             </div>
           </div>

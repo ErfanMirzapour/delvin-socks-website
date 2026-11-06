@@ -29,19 +29,24 @@ const KEY = "socks_cart_v1";
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
+  // Don't write until the saved cart has been read, or the initial empty
+  // state can overwrite it (e.g. when effects run twice in dev).
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(KEY);
       if (raw) setLines(JSON.parse(raw));
     } catch {}
+    setLoaded(true);
   }, []);
 
   useEffect(() => {
+    if (!loaded) return;
     try {
       localStorage.setItem(KEY, JSON.stringify(lines));
     } catch {}
-  }, [lines]);
+  }, [lines, loaded]);
 
   const api = useMemo<CartCtx>(
     () => ({
