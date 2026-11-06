@@ -2,7 +2,7 @@
 
 Farsi (RTL) socks shop MVP — no online payment. Customers fill a cart, see an invoice-style receipt, submit postal details, and the order is stored in the admin panel + optionally notified instantly via Telegram. Shipping is done by post with a phone follow-up.
 
-Live design: **v1 "Warm Bazaar"** is the main storefront at `/` (`/v1` redirects to `/`).
+Live design: **"Knit"**, a cozy handmade look (El Messiri + Vazirmatn, terracotta/forest/mustard on cream). Storefront pages live in `app/(shop)`, the theme in `app/knit.css`, and shared shop logic in `lib/shop.ts`.
 
 ## Stack
 
