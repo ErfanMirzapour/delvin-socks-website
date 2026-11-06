@@ -1,0 +1,27 @@
+/* v3 "Street" — loud, black + acid lime, brutalist */
+.v3 {
+  --bg: #0b0b0b;
+  --ink: #f4f4f0;
+  --lime: #c6ff00;
+  --red: #ff3b1f;
+  --grey: #8a8a85;
+  --panel: #161616;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--v3-kufi), var(--font-vazir);
+}
+.v3 .mega { font-weight: 900; letter-spacing: -0.01em; line-height: 1.2; }
+.v3 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .08em; text-transform: uppercase; }
+.v3 .hard { border: 2px solid var(--ink); }
+.v3 .hard-lime { border: 2px solid var(--lime); }
+.v3 .slam { transition: transform .1s, box-shadow .1s; box-shadow: 6px 6px 0 var(--lime); }
+.v3 .slam:hover:not(:disabled) { transform: translate(-2px, -2px); box-shadow: 8px 8px 0 var(--lime); }
+.v3 .slam:active:not(:disabled) { transform: translate(4px, 4px); box-shadow: 2px 2px 0 var(--lime); }
+.v3 .ticker { display: flex; width: max-content; animation: v3tick 22s linear infinite; }
+@keyframes v3tick { from { transform: translateX(0); } to { transform: translateX(50%); } }
+.v3 .stripes { background: repeating-linear-gradient(-45deg, var(--lime) 0 10px, transparent 10px 20px); }
+.v3 .noise { background-image: radial-gradient(rgba(255,255,255,.06) 1px, transparent 1px); background-size: 4px 4px; }
+.v3 input, .v3 textarea { width: 100%; background: var(--bg); color: var(--ink); border: 2px solid var(--ink); padding: 14px 16px; outline: none; font-size: 15px; font-weight: 700; }
+.v3 input:focus, .v3 textarea:focus { border-color: var(--lime); }
+.v3 input::placeholder, .v3 textarea::placeholder { color: #555; }
+@media (prefers-reduced-motion: reduce) { .v3 .ticker { animation: none; } .v3 .slam { transition: none; } }

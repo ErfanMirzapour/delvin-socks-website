@@ -9,3 +9,7 @@ export const POST_EXPLAINER =
 export function formatPrice(n: number): string {
   return n.toLocaleString("fa-IR") + " تومان";
 }
+
+// Shown on checkout, before the order exists (POST_EXPLAINER opens with "order placed").
+export const CHECKOUT_NOTE =
+  "پرداخت آنلاین نداریم — ما در پایان روز سفارش‌ها را با پست ارسال می‌کنیم و برای هماهنگی هزینه و ارسال با شما تماس می‌گیریم. لطفاً تلفن‌تان در دسترس باشد.";
