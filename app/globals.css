@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --font-vazir: "Vazirmatn", "Tahoma", sans-serif;
+  --font-vazir: "Vazirmatn Variable", "Vazirmatn", "Tahoma", sans-serif;
+  --knit-display: "El Messiri";
 }
 
 html {

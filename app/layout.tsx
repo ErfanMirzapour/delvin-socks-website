@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
-import { El_Messiri, Vazirmatn } from "next/font/google";
+// Fonts are bundled from npm (Fontsource) instead of next/font/google:
+// the Cloudflare build can't download Google Fonts reliably.
+import "@fontsource-variable/vazirmatn/index.css";
+import "@fontsource/el-messiri/arabic-500.css";
+import "@fontsource/el-messiri/arabic-600.css";
+import "@fontsource/el-messiri/arabic-700.css";
+import "@fontsource/el-messiri/latin-500.css";
+import "@fontsource/el-messiri/latin-600.css";
+import "@fontsource/el-messiri/latin-700.css";
 import "./globals.css";
 import "./knit.css";
 import { CartProvider } from "@/lib/cart";
-
-const vazir = Vazirmatn({ subsets: ["arabic", "latin"], weight: ["400", "500", "700", "900"] });
-const messiri = El_Messiri({ subsets: ["arabic", "latin"], weight: ["500", "600", "700"], variable: "--knit-display" });
 
 export const metadata: Metadata = {
   title: "دلوین | جوراب گرم خانگی",
@@ -15,7 +20,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fa" dir="rtl">
-      <body className={`${vazir.className} ${messiri.variable} knit min-h-screen flex flex-col`}>
+      <body className="knit min-h-screen flex flex-col">
         <CartProvider>{children}</CartProvider>
       </body>
     </html>
