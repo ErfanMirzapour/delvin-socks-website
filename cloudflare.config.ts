@@ -12,6 +12,8 @@ export default defineConfig({
     },
     env: {
       ASSETS: bindings.assets(),
+      // Cloudflare Images: optimizes next/image (/_next/image) on the fly.
+      IMAGES: bindings.images(),
       DB: bindings.d1({
         name: "delvin-socks-db",
         id: "8d537aba-79e4-4ff2-960d-752843b118af",
