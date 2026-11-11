@@ -4,6 +4,8 @@
   "name": "delvin-socks",
   "compatibility_date": "2024-12-30",
   "compatibility_flags": ["nodejs_compat"],
+  "routes": [{ "pattern": "delvin-socks.ir", "custom_domain": true }],
+  "keep_vars": true,
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
@@ -14,5 +16,11 @@
       "database_name": "delvin-socks-db",
       "database_id": "8d537aba-79e4-4ff2-960d-752843b118af"
     }
-  ]
+  ],
+  "previews": {
+    "vars": { "TELEGRAM_NOTIFICATIONS_ENABLED": "false", "DB_SEED": "true" },
+    "d1_databases": [
+      { "binding": "DB", "database_id": "79e2f26b-4d87-4a67-87c3-83b7af11f3a8" }
+    ]
+  }
 }

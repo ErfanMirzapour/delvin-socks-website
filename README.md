@@ -44,7 +44,7 @@ All in `.env` (gitignored, never committed):
 | `ADMIN_PASSWORD` | yes (first run) | Required bootstrap admin password. Stored into the DB on first run; afterwards the panel's "تغییر رمز" owns it |
 | `TELEGRAM_BOT_TOKEN` | for Telegram alerts | Bot token from `@BotFather` |
 | `TELEGRAM_CHAT_ID` | for Telegram alerts | Your numeric chat ID (see below) |
-| `TELEGRAM_NOTIFY_IN_DEV` | no | Set `true` only for an explicit dev notify test. Default: notify in production only |
+| `TELEGRAM_NOTIFICATIONS_ENABLED` | no | Set `true` to enable delivery in this deployment. Missing or any other value disables delivery |
 | `NEXT_PUBLIC_SHOP_PHONE` | yes | Shop phone shown in footer + About + success page |
 | `NEXT_PUBLIC_TELEGRAM_CHANNEL` | no | Public channel link, e.g. `https://t.me/delvin_socks` |
 | `SUPABASE_URL` | for photo uploads | e.g. `https://xyz.supabase.co` (Project Settings → Data API) |
@@ -73,9 +73,9 @@ SUPABASE_SERVICE_KEY=eyJ...
 SUPABASE_BUCKET=product-images
 ```
 
-## Telegram notifications (one message per order, production only)
+## Telegram notifications (one message per order when enabled)
 
-When `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` are set **and** `NODE_ENV=production`, `POST /api/orders` sends a fire-and-forget message with order id, name, phone, address, postal code, note, items and total. In development nothing is sent (your dev orders won't spam the production bot). If unset, orders are only stored in the panel — no error.
+When `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, and `TELEGRAM_NOTIFICATIONS_ENABLED=true` are set, `POST /api/orders` sends a fire-and-forget message with order id, name, phone, address, postal code, note, items and total. Set the opt-in as a production Worker variable in Cloudflare, not in the top-level Wrangler configuration: local production-runtime previews also use that configuration. Previews explicitly opt out. Use a separate test bot and chat for preview delivery tests. If disabled or credentials are missing, orders are only stored in the panel — no error. `NODE_ENV` does not identify the deployment environment.
 
 Setup (5 minutes, phone + laptop):
 
@@ -127,7 +127,13 @@ npx wrangler secret put SUPABASE_SERVICE_KEY
 npm run deploy
 ```
 
-Then attach the domain: Cloudflare dashboard → Workers & Pages → `delvin-socks` → Settings → Domains & Routes → Add `delvin-socks.ir` (move the domain's nameservers to Cloudflare if needed). HTTPS is automatic.
+The production custom domain `delvin-socks.ir` is recorded in `wrangler.jsonc` and was verified in the Worker Domains tab. Cloudflare DNS proxies `www` and a Single Redirect sends HTTPS requests to the apex, preserving paths and query strings. Keep that DNS record and redirect rule when changing the domain setup.
+
+### Hosted previews
+
+Workers Builds uses `wrangler preview` for branch builds. The `previews` block binds `DB` to the dedicated `delvin-socks-preview` D1 database, seeds sample products when empty, and disables Telegram. All branch previews share this database, so they are isolated from production but not from one another. Preview settings and secrets are separate from production; do not import production secrets. The preview database was created empty on 2026-11-11.
+
+Before testing admin or uploads, configure Previews Base secrets in Cloudflare for **new** previews: a unique `ADMIN_PASSWORD`, and `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` for a separate test Supabase project with a private `product-images` bucket. Do not use the production service-role key, which can access production storage even with another bucket name. Existing previews must be recreated or configured individually after base secrets change. For a Telegram delivery test, use a dedicated test bot and chat, set their preview secrets, and explicitly enable `TELEGRAM_NOTIFICATIONS_ENABLED` for that test preview only. Turn it off again afterward. Preview URLs are public unless protected with Cloudflare Access; use only disposable test data.
 
 ## TODO
 
@@ -137,12 +143,12 @@ Deployment checks on 2026-11-11: `https://delvin-socks.ir` and the production Wo
 
 - [x] Deploy the production Worker with D1 and Supabase Storage (production build check passed)
 - [x] Restore HTTPS availability at `delvin-socks.ir` (HTTP 200 verified)
-- [ ] Verify the custom domain binding in Cloudflare and record it in deployment configuration so future deploys preserve it
+- [x] Verify the custom domain binding in Cloudflare and record it in deployment configuration so future deploys preserve it
 - [ ] Investigate the failed branch preview build and verify a fresh branch or PR produces a working preview URL. Inspect the [failed Cloudflare build](https://dash.cloudflare.com/5c6e3d8ea8ddeae6f56b5620e52a8c76/workers/services/view/delvin-socks/production/builds/9ba1192b-66ab-4052-81f2-a8c7b7644099)
 - [ ] Isolate hosted previews from production with a separate D1 database, storage location, admin credentials, and notification settings. Version URLs alone do not establish data isolation
-- [ ] Gate Telegram notifications by deployment environment. Local production builds and hosted previews can have `NODE_ENV=production`, so the current check can send real alerts when real bot credentials are present
+- [ ] Gate Telegram notifications by deployment environment. Code and production opt-in are prepared; verify after deployment
 - [ ] Verify the local production-runtime preview with `pnpm run preview`, including database access and explicit sample-data configuration
-- [ ] Configure `www.delvin-socks.ir` with HTTPS and a redirect to the apex domain (the www hostname did not resolve during the check)
+- [x] Configure `www.delvin-socks.ir` with HTTPS and a redirect to the apex domain (HTTPS 301 and path/query preservation verified 2026-11-11)
 - [ ] Verify a complete order flow in an isolated preview, including login, password change, image upload, order persistence, shipment status, stock updates, and Telegram delivery. Repeat a controlled production smoke check before launch
 - [ ] Document and verify D1 backup/restore, image recovery, and deployment rollback procedures. Add uptime and runtime-error monitoring
 
