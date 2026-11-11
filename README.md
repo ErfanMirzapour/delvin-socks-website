@@ -131,16 +131,44 @@ Then attach the domain: Cloudflare dashboard → Workers & Pages → `delvin-soc
 
 ## TODO
 
-- [x] Production deploy for delvin-socks.ir → Cloudflare Workers + D1 + R2 (done, free tier)
-- [ ] Attach `delvin-socks.ir` custom domain in the Cloudflare dashboard
-- [ ] Set real `NEXT_PUBLIC_SHOP_PHONE` and `NEXT_PUBLIC_TELEGRAM_CHANNEL`
-- [ ] Change `ADMIN_PASSWORD` from default `admin123` (or change it from the panel after first deploy)
-- [ ] Decide product catalog + real photos (replace `public/socks/*.svg` placeholders where needed)
-- [ ] Add `robots.txt` / sitemap + real shop name in `app/layout.tsx` metadata
-- [ ] Upload hygiene: image resize/compress on upload (R2 object is already deleted with its product)
-- [ ] Order management: search/filter, export CSV
-- [ ] Harden checkout: rate-limit `POST /api/orders`, basic spam honeypot
-- [ ] Optional later: online payment gateway, SMS confirmation, multi-admin accounts
+Deployment checks on 2026-11-11: `https://delvin-socks.ir` and the production Worker URL returned HTTP 200. The products API returned three products, and `/admin`, `/cart`, `/checkout`, and `/about` returned HTTP 200. The Cloudflare build for `main` commit `1789cea` passed. The latest check for redesign branch commit `b8c05ca` failed. These are availability checks. Admin actions, checkout submission, uploads, Telegram delivery, and a working hosted preview still need verification.
+
+### Production and previews
+
+- [x] Deploy the production Worker with D1 and Supabase Storage (production build check passed)
+- [x] Restore HTTPS availability at `delvin-socks.ir` (HTTP 200 verified)
+- [ ] Verify the custom domain binding in Cloudflare and record it in deployment configuration so future deploys preserve it
+- [ ] Investigate the failed branch preview build and verify a fresh branch or PR produces a working preview URL. Inspect the [failed Cloudflare build](https://dash.cloudflare.com/5c6e3d8ea8ddeae6f56b5620e52a8c76/workers/services/view/delvin-socks/production/builds/9ba1192b-66ab-4052-81f2-a8c7b7644099)
+- [ ] Isolate hosted previews from production with a separate D1 database, storage location, admin credentials, and notification settings. Version URLs alone do not establish data isolation
+- [ ] Gate Telegram notifications by deployment environment. Local production builds and hosted previews can have `NODE_ENV=production`, so the current check can send real alerts when real bot credentials are present
+- [ ] Verify the local production-runtime preview with `pnpm run preview`, including database access and explicit sample-data configuration
+- [ ] Configure `www.delvin-socks.ir` with HTTPS and a redirect to the apex domain (the www hostname did not resolve during the check)
+- [ ] Verify a complete order flow in an isolated preview, including login, password change, image upload, order persistence, shipment status, stock updates, and Telegram delivery. Repeat a controlled production smoke check before launch
+- [ ] Document and verify D1 backup/restore, image recovery, and deployment rollback procedures. Add uptime and runtime-error monitoring
+
+### Admin and order correctness
+
+- [ ] Await the database write in `app/api/admin/password/route.ts` before refreshing the session or returning success. Verify the new password persists and existing sessions are invalidated
+- [ ] Verify the saved production admin password has been changed through the panel. `ADMIN_PASSWORD` initializes a fresh database only. Updating the secret does not replace an existing saved password
+- [ ] Remove the `admin123` bootstrap fallback and require a nonempty strong password for a fresh production database. Preserve existing saved passwords and make concurrent initialization safe
+- [ ] Replace the password-hash cookie with revocable random session tokens, set Secure cookies in production, and use a salted password hashing scheme with a work factor. Preserve password-change session invalidation
+- [ ] Rate-limit login and order submission, add basic checkout spam protection, and enforce request size and field length limits
+- [ ] Validate finite positive integer quantities and product IDs, aggregate duplicate product lines before stock checks, and validate nonnegative integer prices and stock in admin endpoints
+- [ ] Prevent duplicate orders when checkout is retried or submitted twice
+- [ ] Make shipment status changes safe under concurrent requests so stock changes once per transition. Handle insufficient stock explicitly and prevent stock inflation when reversing a shipment after a floored deduction
+- [ ] Confirm the pending-order stock policy. Stock is checked at checkout and deducted at shipment, so multiple pending orders can exceed available inventory
+- [ ] Add focused regression checks for password bootstrap, checkout validation, duplicate submissions, and concurrent order status changes. Resolve the cart lint issue reported in the redesign PR and establish required build/type/lint checks
+
+### Catalog and launch
+
+- [ ] Set real `NEXT_PUBLIC_SHOP_PHONE` and `NEXT_PUBLIC_TELEGRAM_CHANNEL`, then verify their displayed production values
+- [ ] Finalize the product catalog, prices, stock, and real photos
+- [ ] Add `robots.txt`, sitemap, canonical URLs, and product/share metadata for the current Knit design
+- [ ] Validate image content and resize/compress uploads. Verify Supabase image cleanup on replacement, product deletion, and failed saves
+- [ ] Update README routes and design references for Knit, replace stale R2 instructions with Supabase Storage, and document production versus preview commands and environment variables
+- [ ] Standardize package management on pnpm or Bun, commit its lockfile, and align Cloudflare build commands
+- [ ] Order management: search/filter and CSV export
+- [ ] Optional later: online payment gateway, SMS confirmation, and multiple admin accounts
 
 ## License
 
