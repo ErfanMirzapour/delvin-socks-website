@@ -144,7 +144,7 @@ Deployment checks on 2026-11-11: `https://delvin-socks.ir` and the production Wo
 - [x] Deploy the production Worker with D1 and Supabase Storage (production build check passed)
 - [x] Restore HTTPS availability at `delvin-socks.ir` (HTTP 200 verified)
 - [x] Verify the custom domain binding in Cloudflare and record it in deployment configuration so future deploys preserve it
-- [ ] Investigate the failed branch preview build and verify a fresh branch or PR produces a working preview URL. Inspect the [failed Cloudflare build](https://dash.cloudflare.com/5c6e3d8ea8ddeae6f56b5620e52a8c76/workers/services/view/delvin-socks/production/builds/9ba1192b-66ab-4052-81f2-a8c7b7644099)
+- [x] Investigate the failed branch preview build and verify a fresh branch produces a working preview URL. The [old build](https://dash.cloudflare.com/5c6e3d8ea8ddeae6f56b5620e52a8c76/workers/services/view/delvin-socks/production/builds/9ba1192b-66ab-4052-81f2-a8c7b7644099) lacked a `previews` D1 binding. The new branch also needed a lint fix and preview deploy script; its hosted build and sample products API passed on 2026-11-11.
 - [ ] Isolate hosted previews from production with a separate D1 database, storage location, admin credentials, and notification settings. Version URLs alone do not establish data isolation
 - [ ] Gate Telegram notifications by deployment environment. Code and production opt-in are prepared; verify after deployment
 - [ ] Verify the local production-runtime preview with `pnpm run preview`, including database access and explicit sample-data configuration
