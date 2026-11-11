@@ -6,7 +6,7 @@ Live design: **v1 "Warm Bazaar"** is the main storefront at `/` (`/v1` redirects
 
 ## Stack
 
-- Next.js 16 App Router + React 19, deployed on **Cloudflare Workers** via `@opennextjs/cloudflare` (free tier)
+- Next.js 16 App Router API + React 19, built with **[vinext](https://vinext.dev)** (Vite) and deployed on **Cloudflare Workers** with the `cf` CLI (free tier)
 - **Cloudflare D1** (SQLite-compatible) for products/orders/settings — local emulation in dev, remote D1 in production
 - **Supabase Storage** (free tier, no credit card) as origin for product photos, served via `/img/...` proxy
 - Tailwind CSS 4, Vazirmatn font, `lang="fa" dir="rtl"`
@@ -28,11 +28,13 @@ Live design: **v1 "Warm Bazaar"** is the main storefront at `/` (`/v1` redirects
 ## Quick start
 
 ```bash
-npm install
+pnpm install
 # create .env (see Environment variables below)
-npm run dev            # http://localhost:3000, local D1+R2 emulation, seeds samples
-npm run preview        # production build on the real Workers runtime, locally
-npm run deploy         # build + deploy to Cloudflare (after one-time setup below)
+pnpm dev               # http://localhost:5173, local D1 emulation, seeds samples
+pnpm preview           # production build on the real Workers runtime, locally
+pnpm run deploy        # build + deploy to Cloudflare (after one-time setup below)
+pnpm lint              # oxlint
+pnpm typecheck         # generate Worker + route types, then tsc
 ```
 
 ## Environment variables
@@ -52,12 +54,12 @@ All in `.env` (gitignored, never committed):
 | `SUPABASE_BUCKET` | no | Bucket name (default `product-images` — create it in Supabase Storage, private is fine) |
 | `DB_SEED` | no | `true`/`false`. Default: seed samples in dev, no seed in production |
 
-Locally these come from `.env`. **In production they must be Worker secrets/vars** (`.env` is never uploaded):
+Locally these come from `.env`. Server secrets must be declared in `cloudflare.config.ts` (`bindings.secret()`) to reach the Worker in dev. **In production they must be Worker secrets/vars** (`.env` is never uploaded):
 
 ```bash
-npx wrangler secret put ADMIN_PASSWORD
-npx wrangler secret put TELEGRAM_BOT_TOKEN
-npx wrangler secret put TELEGRAM_CHAT_ID
+pnpm exec cf workers secrets update ADMIN_PASSWORD --worker delvin-socks --text "<value>"
+pnpm exec cf workers secrets update TELEGRAM_BOT_TOKEN --worker delvin-socks --text "<value>"
+pnpm exec cf workers secrets update TELEGRAM_CHAT_ID --worker delvin-socks --text "<value>"
 ```
 
 Example `.env`:
@@ -107,7 +109,7 @@ Not linked from the site header — open the URL directly. Login with the admin 
 ## Database & storage
 
 - **D1** (SQLite API). Tables: `products`, `orders`, `settings` (admin password hash). Schema is ensured by the app on first request — no manual migration needed.
-- Dev (`npm run dev`): local D1 emulation (state in `.wrangler/`, gitignored), auto-seeds 9 sample products on an empty DB.
+- Dev (`pnpm dev`): local D1 emulation (Miniflare, via the Cloudflare Vite plugin), auto-seeds 9 sample products on an empty DB.
 - Production: remote D1, starts **empty** — add real products via `/admin`.
 - Product photos live in **Supabase Storage** (free 1 GB, no credit card), served via `/img/...` (local emulation in dev).
 
@@ -117,14 +119,14 @@ Not linked from the site header — open the URL directly. Login with the admin 
 2. Project Settings → Data API → copy the URL + `service_role` key.
 
 ```bash
-npx wrangler login
-npx wrangler d1 create delvin-socks-db        # copy database_id into wrangler.jsonc
-npx wrangler secret put ADMIN_PASSWORD
-npx wrangler secret put TELEGRAM_BOT_TOKEN
-npx wrangler secret put TELEGRAM_CHAT_ID
-npx wrangler secret put SUPABASE_URL
-npx wrangler secret put SUPABASE_SERVICE_KEY
-npm run deploy
+pnpm exec cf auth login
+pnpm exec cf d1 create                         # copy the id into cloudflare.config.ts (env.DB)
+pnpm exec cf workers secrets update ADMIN_PASSWORD --worker delvin-socks --text "<value>"
+pnpm exec cf workers secrets update TELEGRAM_BOT_TOKEN --worker delvin-socks --text "<value>"
+pnpm exec cf workers secrets update TELEGRAM_CHAT_ID --worker delvin-socks --text "<value>"
+pnpm exec cf workers secrets update SUPABASE_URL --worker delvin-socks --text "<value>"
+pnpm exec cf workers secrets update SUPABASE_SERVICE_KEY --worker delvin-socks --text "<value>"
+pnpm run deploy
 ```
 
 Then attach the domain: Cloudflare dashboard → Workers & Pages → `delvin-socks` → Settings → Domains & Routes → Add `delvin-socks.ir` (move the domain's nameservers to Cloudflare if needed). HTTPS is automatic.
@@ -168,7 +170,8 @@ Deployment checks on 2026-11-11: `https://delvin-socks.ir` and the production Wo
 - [ ] Add `robots.txt`, sitemap, canonical URLs, and product/share metadata for the current Knit design
 - [ ] Validate image content and resize/compress uploads. Verify Supabase image cleanup on replacement, product deletion, and failed saves
 - [ ] Update README routes and design references for Knit, replace stale R2 instructions with Supabase Storage, and document production versus preview commands and environment variables
-- [ ] Standardize package management on pnpm or Bun, commit its lockfile, and align Cloudflare build commands
+- [x] Standardize package management on pnpm and commit its lockfile
+- [ ] Align Cloudflare Workers Builds commands with pnpm + vinext (`pnpm run build` / `pnpm run deploy`)
 - [ ] Order management: search/filter and CSV export
 - [ ] Optional later: online payment gateway, SMS confirmation, and multiple admin accounts
 

@@ -36,7 +36,7 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
-    fetch("/api/products?category=all").then((r) => {
+    fetch("/api/products?category=all").then(() => {
       // products are public; auth checked on write. Try orders to detect session:
       setAuthed(null);
       loadProducts();
