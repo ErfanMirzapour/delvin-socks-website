@@ -21,7 +21,7 @@ export async function PATCH(req: Request) {
       { error: "رمز جدید حداقل ۶ کاراکتر باشد" },
       { status: 400 }
     );
-  setAdminPasswordHash(hashPassword(nextPw));
+  await setAdminPasswordHash(hashPassword(nextPw));
   // Refresh own session so the admin stays logged in; everyone else is logged out.
   await setAdminCookie();
   return NextResponse.json({ ok: true });

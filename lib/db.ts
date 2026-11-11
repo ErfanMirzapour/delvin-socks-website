@@ -127,12 +127,20 @@ export async function getAdminPasswordHash(): Promise<string> {
     .prepare("SELECT value FROM settings WHERE key='admin_password_hash'")
     .first<{ value: string }>();
   if (row) return row.value;
-  const h = hashPassword(secret("ADMIN_PASSWORD", "admin123"));
+  const password = secret("ADMIN_PASSWORD");
+  if (!password.trim()) {
+    throw new Error("ADMIN_PASSWORD must be set before initializing the admin account");
+  }
+  const hash = hashPassword(password);
   await db
-    .prepare("INSERT INTO settings (key, value) VALUES ('admin_password_hash', ?)")
-    .bind(h)
+    .prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('admin_password_hash', ?)")
+    .bind(hash)
     .run();
-  return h;
+  const saved = await db
+    .prepare("SELECT value FROM settings WHERE key='admin_password_hash'")
+    .first<{ value: string }>();
+  if (!saved) throw new Error("Failed to initialize the admin password");
+  return saved.value;
 }
 
 export async function setAdminPasswordHash(hash: string) {
