@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import Link from "next/link";
 import type { Product } from "@/lib/catalog";
 import { categoryFa } from "@/lib/catalog";
@@ -73,6 +74,11 @@ export function Footer() {
 
 export function Photo({ p, className = "" }: { p: Product; className?: string }) {
   const src = productPhoto(p);
+  // Our own uploads (/img/...) go through Cloudflare Images (resized, AVIF/WebP).
+  // External URLs are shown as-is.
+  if (src.startsWith("/img/"))
+    return <Image src={src} alt={p.title} width={600} height={600} sizes="(min-width: 768px) 33vw, 50vw" className={`object-cover ${className}`} />;
+  // oxlint-disable-next-line nextjs/no-img-element
   if (src) return <img src={src} alt={p.title} className={`object-cover ${className}`} />;
   return <SockArt seed={p.id} colors={SOCK_COLORS} bg={TILES[p.id % TILES.length]} variant="flat" className={className} label={p.title} />;
 }

@@ -36,7 +36,7 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
-    fetch("/api/products?category=all").then((r) => {
+    fetch("/api/products?category=all").then(() => {
       // products are public; auth checked on write. Try orders to detect session:
       setAuthed(null);
       loadProducts();
@@ -255,6 +255,7 @@ export default function AdminPage() {
               <label className={L}>موجودی (تعداد جفت)<input type="number" value={editing.stock} onChange={(e) => setEditing({ ...editing, stock: Number(e.target.value) })} /></label>
               <div className={L}>عکس
                 <div className="flex gap-2 items-center">
+                  {/* oxlint-disable-next-line nextjs/no-img-element -- admin preview, may be a remote URL */}
                   {editing.image && <img src={editing.image} alt="" className="w-16 h-16 rounded-[16px] object-cover" />}
                   <label className="flex-1 text-center py-3.5 rounded-2xl border-2 border-dashed border-[#d9c9b1] font-bold cursor-pointer bg-white hover:border-[var(--terra)]">
                     {uploading ? "در حال آپلود…" : "📷 انتخاب عکس از گوشی"}

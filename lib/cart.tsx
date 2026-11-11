@@ -33,6 +33,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // state can overwrite it (e.g. when effects run twice in dev).
   const [loaded, setLoaded] = useState(false);
 
+  // Hydrate from localStorage after mount (not available during SSR).
+  /* oxlint-disable react/set-state-in-effect */
   useEffect(() => {
     try {
       const raw = localStorage.getItem(KEY);
@@ -40,6 +42,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } catch {}
     setLoaded(true);
   }, []);
+  /* oxlint-enable react/set-state-in-effect */
 
   useEffect(() => {
     if (!loaded) return;
