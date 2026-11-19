@@ -36,7 +36,7 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
-    fetch("/api/products?category=all").then((r) => {
+    fetch("/api/products?category=all").then(() => {
       // products are public; auth checked on write. Try orders to detect session:
       setAuthed(null);
       loadProducts();
@@ -86,13 +86,18 @@ export default function AdminPage() {
   }
 
   async function setStatus(id: number, status: string) {
-    const response = await fetch(`/api/orders/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
-    if (!response.ok) {
-      const body = await response.json() as { error?: string };
-      alert(body.error || "تغییر وضعیت سفارش انجام نشد");
-      return;
+    try {
+      const r = await fetch(`/api/orders/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
+      if (!r.ok) {
+        const body = await r.json() as { error?: string };
+        setMsg(body.error || "خطا در تغییر وضعیت سفارش");
+        return;
+      }
+      setMsg("");
+      await Promise.all([loadOrders(), loadProducts()]);
+    } catch {
+      setMsg("خطا در تغییر وضعیت سفارش");
     }
-    loadOrders();
   }
 
   async function delOrder(id: number) {
@@ -126,7 +131,6 @@ export default function AdminPage() {
         <div className="soft-card p-7 text-center">
           <Logo />
           <h1 className="hand text-3xl mt-5">ورود به پنل</h1>
-          <p className="text-sm text-[var(--soft)] mt-2 leading-7">رمز پیش‌فرض <code dir="ltr">admin123</code> است — بعد از ورود عوضش کنید.</p>
           <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} onKeyDown={(e) => e.key === "Enter" && login()}
             placeholder="رمز مدیریت" className="mt-6" />
           {msg && <div className="mt-3 text-sm text-[#8f2f17] font-bold">{msg}</div>}
@@ -260,6 +264,7 @@ export default function AdminPage() {
               <label className={L}>موجودی (تعداد جفت)<input type="number" value={editing.stock} onChange={(e) => setEditing({ ...editing, stock: Number(e.target.value) })} /></label>
               <div className={L}>عکس
                 <div className="flex gap-2 items-center">
+                  {/* oxlint-disable-next-line nextjs/no-img-element -- admin preview, may be a remote URL */}
                   {editing.image && <img src={editing.image} alt="" className="w-16 h-16 rounded-[16px] object-cover" />}
                   <label className="flex-1 text-center py-3.5 rounded-2xl border-2 border-dashed border-[#d9c9b1] font-bold cursor-pointer bg-white hover:border-[var(--terra)]">
                     {uploading ? "در حال آپلود…" : "📷 انتخاب عکس از گوشی"}

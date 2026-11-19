@@ -8,7 +8,7 @@ const MAX_MEMORY = 64 * 1024 * 1024;
 
 export async function derive(pw: string, salt: Uint8Array, iterations: number): Promise<string> {
   const key = await crypto.webcrypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveBits"]);
-  const bits = await crypto.webcrypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations }, key, 256);
+  const bits = await crypto.webcrypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: new Uint8Array(salt), iterations }, key, 256);
   return Buffer.from(bits).toString("hex");
 }
 

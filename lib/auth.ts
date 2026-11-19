@@ -1,5 +1,4 @@
 import { cookies } from "next/headers";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import crypto from "node:crypto";
 import { ensureSchema, getAdminPasswordHash, hashPassword } from "./db";
 import { derive, deriveScrypt, securePasswordHash } from "./password";
@@ -67,4 +66,3 @@ export async function clearAdminCookie() {
 }
 
 export { COOKIE };
-export function cfContext() { return getCloudflareContext(); }

@@ -6,7 +6,7 @@ Live design: **v1 "Warm Bazaar"** is the main storefront at `/` (`/v1` redirects
 
 ## Stack
 
-- Next.js 16 App Router + React 19, deployed on **Cloudflare Workers** via `@opennextjs/cloudflare` (free tier)
+- Next.js 16 App Router API + React 19, built with **[vinext](https://vinext.dev)** (Vite) and deployed on **Cloudflare Workers** with the `cf` CLI (free tier)
 - **Cloudflare D1** (SQLite-compatible) for products/orders/settings — local emulation in dev, remote D1 in production
 - **Supabase Storage** (free tier, no credit card) as origin for product photos, served via `/img/...` proxy
 - Tailwind CSS 4, Vazirmatn font, `lang="fa" dir="rtl"`
@@ -28,11 +28,13 @@ Live design: **v1 "Warm Bazaar"** is the main storefront at `/` (`/v1` redirects
 ## Quick start
 
 ```bash
-npm install
+pnpm install
 # create .env (see Environment variables below)
-npm run dev            # http://localhost:3000, local D1+R2 emulation, seeds samples
-npm run preview        # production build on the real Workers runtime, locally
-npm run deploy         # build + deploy to Cloudflare (after one-time setup below)
+pnpm dev               # http://localhost:5173, local D1 emulation, seeds samples
+pnpm preview           # production build on the real Workers runtime, locally
+pnpm run deploy        # build + deploy to Cloudflare (after one-time setup below)
+pnpm lint              # oxlint
+pnpm typecheck         # generate Worker + route types, then tsc
 ```
 
 ## Environment variables
@@ -44,7 +46,7 @@ All in `.env` (gitignored, never committed):
 | `ADMIN_PASSWORD` | yes (first run) | Required bootstrap admin password. Stored into the DB on first run; afterwards the panel's "تغییر رمز" owns it |
 | `TELEGRAM_BOT_TOKEN` | for Telegram alerts | Bot token from `@BotFather` |
 | `TELEGRAM_CHAT_ID` | for Telegram alerts | Your numeric chat ID (see below) |
-| `TELEGRAM_NOTIFY_IN_DEV` | no | Set `true` only for an explicit dev notify test. Default: notify in production only |
+| `TELEGRAM_NOTIFICATIONS_ENABLED` | no | Set `true` explicitly to send notifications; otherwise delivery is disabled |
 | `NEXT_PUBLIC_SHOP_PHONE` | yes | Shop phone shown in footer + About + success page |
 | `NEXT_PUBLIC_TELEGRAM_CHANNEL` | no | Public channel link, e.g. `https://t.me/delvin_socks` |
 | `SUPABASE_URL` | for photo uploads | e.g. `https://xyz.supabase.co` (Project Settings → Data API) |
@@ -52,12 +54,12 @@ All in `.env` (gitignored, never committed):
 | `SUPABASE_BUCKET` | no | Bucket name (default `product-images` — create it in Supabase Storage, private is fine) |
 | `DB_SEED` | no | `true`/`false`. Default: seed samples in dev, no seed in production |
 
-Locally these come from `.env`. **In production they must be Worker secrets/vars** (`.env` is never uploaded):
+Locally these come from `.env`. Server secrets must be declared in `cloudflare.config.ts` (`bindings.secret()`) to reach the Worker in dev. **In production they must be Worker secrets/vars** (`.env` is never uploaded):
 
 ```bash
-npx wrangler secret put ADMIN_PASSWORD
-npx wrangler secret put TELEGRAM_BOT_TOKEN
-npx wrangler secret put TELEGRAM_CHAT_ID
+pnpm exec cf workers secrets update ADMIN_PASSWORD --worker delvin-socks --text "<value>"
+pnpm exec cf workers secrets update TELEGRAM_BOT_TOKEN --worker delvin-socks --text "<value>"
+pnpm exec cf workers secrets update TELEGRAM_CHAT_ID --worker delvin-socks --text "<value>"
 ```
 
 Example `.env`:
@@ -75,7 +77,7 @@ SUPABASE_BUCKET=product-images
 
 ## Telegram notifications (one message per order, production only)
 
-When `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` are set **and** `NODE_ENV=production`, `POST /api/orders` sends a fire-and-forget message with order id, name, phone, address, postal code, note, items and total. In development nothing is sent (your dev orders won't spam the production bot). If unset, orders are only stored in the panel — no error.
+When `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, and `TELEGRAM_NOTIFICATIONS_ENABLED=true` are set, `POST /api/orders` sends a fire-and-forget message with order id, name, phone, address, postal code, note, items and total. Production must have the opt-in configured as a Worker secret before deploying this change. Previews explicitly default to `false`; local runs remain off unless opted in. Use a separate test bot and chat for preview tests. `NODE_ENV` does not identify the deployment environment.
 
 Setup (5 minutes, phone + laptop):
 
@@ -107,7 +109,7 @@ Not linked from the site header — open the URL directly. Login with the admin 
 ## Database & storage
 
 - **D1** (SQLite API). Tables: `products`, `orders`, `settings` (admin password hash). Schema is ensured by the app on first request — no manual migration needed.
-- Dev (`npm run dev`): local D1 emulation (state in `.wrangler/`, gitignored), auto-seeds 9 sample products on an empty DB.
+- Dev (`pnpm dev`): local D1 emulation (Miniflare, via the Cloudflare Vite plugin), auto-seeds 9 sample products on an empty DB.
 - Production: remote D1, starts **empty** — add real products via `/admin`.
 - Product photos live in **Supabase Storage** (free 1 GB, no credit card), served via `/img/...` (local emulation in dev).
 
@@ -117,14 +119,14 @@ Not linked from the site header — open the URL directly. Login with the admin 
 2. Project Settings → Data API → copy the URL + `service_role` key.
 
 ```bash
-npx wrangler login
-npx wrangler d1 create delvin-socks-db        # copy database_id into wrangler.jsonc
-npx wrangler secret put ADMIN_PASSWORD
-npx wrangler secret put TELEGRAM_BOT_TOKEN
-npx wrangler secret put TELEGRAM_CHAT_ID
-npx wrangler secret put SUPABASE_URL
-npx wrangler secret put SUPABASE_SERVICE_KEY
-npm run deploy
+pnpm exec cf auth login
+pnpm exec cf d1 create                         # copy the id into cloudflare.config.ts (env.DB)
+pnpm exec cf workers secrets update ADMIN_PASSWORD --worker delvin-socks --text "<value>"
+pnpm exec cf workers secrets update TELEGRAM_BOT_TOKEN --worker delvin-socks --text "<value>"
+pnpm exec cf workers secrets update TELEGRAM_CHAT_ID --worker delvin-socks --text "<value>"
+pnpm exec cf workers secrets update SUPABASE_URL --worker delvin-socks --text "<value>"
+pnpm exec cf workers secrets update SUPABASE_SERVICE_KEY --worker delvin-socks --text "<value>"
+pnpm run deploy
 ```
 
 Then attach the domain: Cloudflare dashboard → Workers & Pages → `delvin-socks` → Settings → Domains & Routes → Add `delvin-socks.ir` (move the domain's nameservers to Cloudflare if needed). HTTPS is automatic.
@@ -135,14 +137,18 @@ Deployment checks on 2026-11-11: `https://delvin-socks.ir` and the production Wo
 
 ### Production and previews
 
+The production custom domain is recorded in `cloudflare.config.ts`. Cloudflare DNS proxies `www`, and a redirect rule sends HTTPS requests to the apex while preserving paths and query strings.
+
+Worker Previews bind `DB` to the separate `delvin-socks-preview` D1 database and seed sample products when empty. All branch previews share that database, so they are isolated from production but not from one another. Preview runtime secrets are separate from production. Previews Base has a unique `ADMIN_PASSWORD` and credentials for the separate `delvin-socks-preview` Supabase project and its private `product-images` bucket. Never use the production service-role key in a preview. Use a separate test bot and chat for Telegram delivery tests. Preview URLs are public unless protected with Cloudflare Access; use only disposable data.
+
 - [x] Deploy the production Worker with D1 and Supabase Storage (production build check passed)
 - [x] Restore HTTPS availability at `delvin-socks.ir` (HTTP 200 verified)
-- [ ] Verify the custom domain binding in Cloudflare and record it in deployment configuration so future deploys preserve it
+- [x] Verify the custom domain binding in Cloudflare and record it in deployment configuration so future deploys preserve it
 - [ ] Investigate the failed branch preview build and verify a fresh branch or PR produces a working preview URL. Inspect the [failed Cloudflare build](https://dash.cloudflare.com/5c6e3d8ea8ddeae6f56b5620e52a8c76/workers/services/view/delvin-socks/production/builds/9ba1192b-66ab-4052-81f2-a8c7b7644099)
 - [ ] Isolate hosted previews from production with a separate D1 database, storage location, admin credentials, and notification settings. Version URLs alone do not establish data isolation
 - [ ] Gate Telegram notifications by deployment environment. Local production builds and hosted previews can have `NODE_ENV=production`, so the current check can send real alerts when real bot credentials are present
 - [ ] Verify the local production-runtime preview with `pnpm run preview`, including database access and explicit sample-data configuration
-- [ ] Configure `www.delvin-socks.ir` with HTTPS and a redirect to the apex domain (the www hostname did not resolve during the check)
+- [x] Configure `www.delvin-socks.ir` with HTTPS and a redirect to the apex domain (HTTPS 301 with path and query preservation verified on 2026-11-11)
 - [ ] Verify a complete order flow in an isolated preview, including login, password change, image upload, order persistence, shipment status, stock updates, and Telegram delivery. Repeat a controlled production smoke check before launch
 - [ ] Document and verify D1 backup/restore, image recovery, and deployment rollback procedures. Add uptime and runtime-error monitoring
 
@@ -168,7 +174,8 @@ Deployment checks on 2026-11-11: `https://delvin-socks.ir` and the production Wo
 - [ ] Add `robots.txt`, sitemap, canonical URLs, and product/share metadata for the current Knit design
 - [ ] Validate image content and resize/compress uploads. Verify Supabase image cleanup on replacement, product deletion, and failed saves
 - [ ] Update README routes and design references for Knit, replace stale R2 instructions with Supabase Storage, and document production versus preview commands and environment variables
-- [ ] Standardize package management on pnpm or Bun, commit its lockfile, and align Cloudflare build commands
+- [x] Standardize package management on pnpm and commit its lockfile
+- [ ] Align Cloudflare Workers Builds commands with pnpm + vinext (`pnpm run build` / `pnpm run deploy`)
 - [ ] Order management: search/filter and CSV export
 - [ ] Optional later: online payment gateway, SMS confirmation, and multiple admin accounts
 

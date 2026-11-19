@@ -56,7 +56,7 @@ for quantity in (0, -1, 1.5):
 invalid = {**order, "items": [{"id": product["id"], "qty": product["stock"]}, {"id": product["id"], "qty": 1}]}
 assert call(client(), "/api/orders", "POST", invalid, {"Idempotency-Key": str(uuid.uuid4())})[0] == 400
 # The test database is disposable: exercise upgrading the old production hash.
-databases = [p for p in pathlib.Path(".wrangler/state/v3/d1/miniflare-D1DatabaseObject").glob("*.sqlite") if p.name != "metadata.sqlite"]
+databases = [p for p in pathlib.Path(".cloudflare/state/v3/d1/miniflare-D1DatabaseObject").glob("*.sqlite") if p.name != "metadata.sqlite"]
 assert len(databases) == 1, databases
 with sqlite3.connect(databases[0]) as db:
     legacy = hashlib.sha256(b"socks:legacy-test-password").hexdigest()
