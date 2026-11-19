@@ -1,24 +1,24 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { env } from "cloudflare:workers";
 import crypto from "node:crypto";
 import type { Category } from "./catalog";
 
 export type { Category, Product, Order, OrderItem } from "./catalog";
 export { categoryFa } from "./catalog";
 
-// Server-only: D1 (production) or its local emulation (next dev / preview).
+// Server-only: D1 (production) or its local emulation (vite dev / preview).
 // Never import this module from client components — use lib/catalog.ts there.
 
 function d1(): D1Database {
-  return getCloudflareContext().env.DB;
+  return env.DB;
 }
 
 // Worker secrets/env first, process.env (.env) fallback for local dev.
 export function secret(name: string, fallback = ""): string {
   try {
-    const v = (getCloudflareContext().env as unknown as Record<string, unknown>)[name];
+    const v = (env as unknown as Record<string, unknown>)[name];
     if (typeof v === "string" && v) return v;
   } catch {
-    // Outside a request scope — fall through to process.env.
+    // Bindings unavailable (e.g. outside workerd) — fall through to process.env.
   }
   return process.env[name] ?? fallback;
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { ensureSchema, seedIfEmpty, type OrderItem } from "@/lib/db";
-import { cfContext, isAdmin } from "@/lib/auth";
+import { waitUntil } from "cloudflare:workers";
+import { isAdmin } from "@/lib/auth";
 import { notifyTelegram } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
@@ -89,7 +90,7 @@ export async function POST(req: Request) {
   };
   // Fire-and-forget Telegram (kept alive via waitUntil on Workers).
   try {
-    cfContext().ctx.waitUntil(notifyTelegram(order).catch(() => {}));
+    waitUntil(notifyTelegram(order).catch(() => {}));
   } catch {
     notifyTelegram(order).catch(() => {});
   }

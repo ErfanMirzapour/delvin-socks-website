@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { fa } from "@/lib/shop";
 import { POST_EXPLAINER, SHOP_PHONE, TELEGRAM_CHANNEL } from "@/lib/site";
 import SockArt from "@/components/SockArt";
-import { B, SOCK_COLORS } from "../_ui";
+import { SOCK_COLORS } from "../_ui";
 
 function Inner() {
   const id = useSearchParams().get("id");

@@ -13,10 +13,6 @@
 # testing
 /coverage
 
-# next.js
-/.next/
-/out/
-
 # production
 /build
 
@@ -39,7 +35,6 @@ data/*.db-shm
 data/*.db-wal
 
 # cloudflare
-.open-next
 .dev.vars
 .wrangler
 
@@ -49,3 +44,9 @@ data/*.db-wal
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+/.next/
+
+# vinext / cf
+/dist/
+.vinext/
+.cloudflare/
