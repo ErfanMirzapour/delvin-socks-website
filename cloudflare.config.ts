@@ -1,8 +1,9 @@
 import { bindings, defineConfig, defineWorker } from "cf/config";
 
-export default defineConfig({
+export default defineConfig(({ isPreview }) => ({
   worker: defineWorker({
     name: "delvin-socks",
+    domains: isPreview ? [] : ["delvin-socks.ir"],
     entrypoint: "vinext/server/fetch-handler",
     compatibilityDate: "2026-11-11",
     assets: {
@@ -15,16 +16,22 @@ export default defineConfig({
       // Cloudflare Images: optimizes next/image (/_next/image) on the fly.
       IMAGES: bindings.images(),
       DB: bindings.d1({
-        name: "delvin-socks-db",
-        id: "8d537aba-79e4-4ff2-960d-752843b118af",
+        name: isPreview ? "delvin-socks-preview" : "delvin-socks-db",
+        id: isPreview
+          ? "79e2f26b-4d87-4a67-87c3-83b7af11f3a8"
+          : "8d537aba-79e4-4ff2-960d-752843b118af",
       }),
+      DB_SEED: isPreview ? bindings.text("true") : undefined,
+      TELEGRAM_NOTIFICATIONS_ENABLED: isPreview
+        ? bindings.text("false")
+        : bindings.secret(),
       // Secrets: set in production with `cf workers secrets update`,
       // read from .env / .dev.vars in local dev.
       ADMIN_PASSWORD: bindings.secret(),
-      TELEGRAM_BOT_TOKEN: bindings.secret(),
-      TELEGRAM_CHAT_ID: bindings.secret(),
+      TELEGRAM_BOT_TOKEN: isPreview ? undefined : bindings.secret(),
+      TELEGRAM_CHAT_ID: isPreview ? undefined : bindings.secret(),
       SUPABASE_URL: bindings.secret(),
       SUPABASE_SERVICE_KEY: bindings.secret(),
     },
   }),
-});
+}));

@@ -2,17 +2,17 @@ import type { Order } from "./db";
 import { secret } from "./db";
 
 export function telegramConfigured(): boolean {
-  return Boolean(secret("TELEGRAM_BOT_TOKEN") && secret("TELEGRAM_CHAT_ID"));
+  return Boolean(
+    secret("TELEGRAM_NOTIFICATIONS_ENABLED") === "true" &&
+      secret("TELEGRAM_BOT_TOKEN") &&
+      secret("TELEGRAM_CHAT_ID")
+  );
 }
 
 export async function notifyTelegram(order: Order): Promise<boolean> {
-  // Production-only: never message from dev machines. Override with
-  // TELEGRAM_NOTIFY_IN_DEV=true for an explicit manual test.
-  if (
-    process.env.NODE_ENV !== "production" &&
-    secret("TELEGRAM_NOTIFY_IN_DEV") !== "true"
-  )
-    return false;
+  // NODE_ENV is also production in local builds and hosted previews.
+  // Require an explicit opt-in in each deployment instead.
+  if (!telegramConfigured()) return false;
   const token = secret("TELEGRAM_BOT_TOKEN");
   const chatId = secret("TELEGRAM_CHAT_ID");
   if (!token || !chatId) return false;
