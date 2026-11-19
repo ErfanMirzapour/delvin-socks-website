@@ -150,7 +150,7 @@ Deployment checks on 2026-11-11: `https://delvin-socks.ir` and the production Wo
 
 - [x] Await the admin password database write before refreshing the session or returning success
 - [x] Verify the new password persists and existing sessions are invalidated in an isolated environment
-- [ ] Verify the saved production admin password has been changed through the panel. `ADMIN_PASSWORD` initializes a fresh database only. Updating the secret does not replace an existing saved password
+- [x] Confirm the saved production admin password was changed through the panel (confirmed by the owner on 2026-11-19). `ADMIN_PASSWORD` initializes a fresh database only; updating the secret does not replace an existing saved password.
 - [x] Remove the `admin123` bootstrap fallback, require an explicit nonempty bootstrap password, and make concurrent initialization safe
 - [ ] Enforce a strong bootstrap password policy
 - [x] Replace the password-hash cookie with revocable random session tokens, set Secure cookies in production, and use a salted password hashing scheme with a work factor. Preserve password-change session invalidation
