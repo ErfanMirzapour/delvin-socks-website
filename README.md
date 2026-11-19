@@ -149,17 +149,17 @@ Deployment checks on 2026-11-11: `https://delvin-socks.ir` and the production Wo
 ### Admin and order correctness
 
 - [x] Await the admin password database write before refreshing the session or returning success
-- [ ] Verify the new password persists and existing sessions are invalidated in an isolated environment
+- [x] Verify the new password persists and existing sessions are invalidated in an isolated environment
 - [ ] Verify the saved production admin password has been changed through the panel. `ADMIN_PASSWORD` initializes a fresh database only. Updating the secret does not replace an existing saved password
 - [x] Remove the `admin123` bootstrap fallback, require an explicit nonempty bootstrap password, and make concurrent initialization safe
 - [ ] Enforce a strong bootstrap password policy
-- [ ] Replace the password-hash cookie with revocable random session tokens, set Secure cookies in production, and use a salted password hashing scheme with a work factor. Preserve password-change session invalidation
-- [ ] Rate-limit login and order submission, add basic checkout spam protection, and enforce request size and field length limits
-- [ ] Validate finite positive integer quantities and product IDs, aggregate duplicate product lines before stock checks, and validate nonnegative integer prices and stock in admin endpoints
-- [ ] Prevent duplicate orders when checkout is retried or submitted twice
-- [ ] Make shipment status changes safe under concurrent requests so stock changes once per transition. Handle insufficient stock explicitly and prevent stock inflation when reversing a shipment after a floored deduction
-- [ ] Confirm the pending-order stock policy. Stock is checked at checkout and deducted at shipment, so multiple pending orders can exceed available inventory
-- [ ] Add focused regression checks for password bootstrap, checkout validation, duplicate submissions, and concurrent order status changes. Resolve the cart lint issue reported in the redesign PR and establish required build/type/lint checks
+- [x] Replace the password-hash cookie with revocable random session tokens, set Secure cookies in production, and use a salted password hashing scheme with a work factor. Preserve password-change session invalidation
+- [x] Rate-limit login and order submission, add basic checkout spam protection, and enforce request size and field length limits
+- [x] Validate finite positive integer quantities and product IDs, aggregate duplicate product lines before stock checks, and validate nonnegative integer prices and stock in admin endpoints
+- [x] Prevent duplicate orders when checkout is retried or submitted twice
+- [x] Make shipment status changes safe under concurrent requests so stock changes once per transition. Handle insufficient stock explicitly and prevent stock inflation when reversing a shipment after a floored deduction
+- [x] Confirm the pending-order stock policy: stock is checked at checkout and deducted at shipment; multiple pending orders can exceed available inventory
+- [ ] Enforce the build/type/lint and regression workflow as required checks in repository branch protection. The workflow and focused local regression checks are included, and the cart lint error is resolved.
 
 ### Catalog and launch
 

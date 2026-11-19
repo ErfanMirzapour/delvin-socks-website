@@ -1,3 +1,4 @@
+import { readJson } from "@/lib/request";
 import { NextResponse } from "next/server";
 import { ensureSchema } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
@@ -12,7 +13,10 @@ export async function PATCH(
   if (!(await isAdmin()))
     return NextResponse.json({ error: "دسترسی ندارید" }, { status: 401 });
   const { id } = await params;
-  const b = (await req.json()) as {
+  let parsed: unknown;
+  try { parsed = await readJson(req, 16_384); } catch { return NextResponse.json({ error: "درخواست نامعتبر یا بیش از حد بزرگ است" }, { status: 400 }); }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return NextResponse.json({ error: "درخواست نامعتبر است" }, { status: 400 });
+  const b = parsed as {
     title?: string;
     category?: string;
     price?: number;
@@ -20,6 +24,9 @@ export async function PATCH(
     image?: string;
     description?: string;
   };
+  if (typeof b.title !== "string" || b.title.trim().length < 1 || b.title.length > 200 || String(b.category || "").length > 30 || String(b.image || "").length > 2048 || String(b.description || "").length > 4000) return NextResponse.json({ error: "اطلاعات محصول نامعتبر است" }, { status: 400 });
+  if (!Number.isSafeInteger(b.price) || b.price! < 0 || !Number.isSafeInteger(b.stock) || b.stock! < 0)
+    return NextResponse.json({ error: "قیمت و موجودی باید اعداد صحیح نامنفی باشند" }, { status: 400 });
   const db = await ensureSchema();
   await db
     .prepare(

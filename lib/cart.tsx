@@ -36,6 +36,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(KEY);
+      // Hydrate from browser storage only after mount to keep server and client renders consistent.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (raw) setLines(JSON.parse(raw));
     } catch {}
     setLoaded(true);

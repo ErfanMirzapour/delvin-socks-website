@@ -1,6 +1,7 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import crypto from "node:crypto";
 import type { Category } from "./catalog";
+import { securePasswordHash } from "./password";
 
 export type { Category, Product, Order, OrderItem } from "./catalog";
 export { categoryFa } from "./catalog";
@@ -51,6 +52,49 @@ const SCHEMA_STATEMENTS = [
     status TEXT NOT NULL DEFAULT 'new',
     created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
   )`,
+  `CREATE TABLE IF NOT EXISTS rate_limits (key TEXT PRIMARY KEY, count INTEGER NOT NULL, expires_at INTEGER NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS order_requests (
+    request_key TEXT PRIMARY KEY,
+    order_id INTEGER NOT NULL,
+    payload_hash TEXT NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS admin_sessions (
+    token_hash TEXT PRIMARY KEY,
+    password_hash TEXT NOT NULL,
+    expires_at INTEGER NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS shipment_stock (
+    order_id INTEGER NOT NULL,
+    product_id INTEGER NOT NULL,
+    quantity INTEGER NOT NULL,
+    PRIMARY KEY (order_id, product_id)
+  )`,
+  `CREATE TRIGGER IF NOT EXISTS order_ship_stock BEFORE UPDATE OF status ON orders
+   WHEN OLD.status = 'new' AND NEW.status = 'sent'
+   BEGIN
+     SELECT CASE WHEN EXISTS (
+       SELECT 1 FROM (SELECT json_extract(value, '$.product_id') AS product_id,
+         SUM(json_extract(value, '$.qty')) AS quantity FROM json_each(OLD.items_json) GROUP BY product_id) AS lines
+       LEFT JOIN products p ON p.id = lines.product_id
+       WHERE p.id IS NULL OR p.stock < lines.quantity OR lines.quantity <= 0
+     ) THEN RAISE(ABORT, 'insufficient_stock') END;
+     INSERT INTO shipment_stock(order_id, product_id, quantity)
+       SELECT OLD.id, json_extract(value, '$.product_id'), SUM(json_extract(value, '$.qty'))
+       FROM json_each(OLD.items_json) GROUP BY json_extract(value, '$.product_id');
+     UPDATE products SET stock = stock - (SELECT quantity FROM shipment_stock
+       WHERE order_id = OLD.id AND product_id = products.id)
+       WHERE id IN (SELECT product_id FROM shipment_stock WHERE order_id = OLD.id);
+   END`,
+  `CREATE TRIGGER IF NOT EXISTS order_unship_stock BEFORE UPDATE OF status ON orders
+   WHEN OLD.status = 'sent' AND NEW.status = 'new'
+   BEGIN
+     SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM shipment_stock WHERE order_id = OLD.id)
+       THEN RAISE(ABORT, 'shipment_history_missing') END;
+     UPDATE products SET stock = stock + (SELECT quantity FROM shipment_stock
+       WHERE order_id = OLD.id AND product_id = products.id)
+       WHERE id IN (SELECT product_id FROM shipment_stock WHERE order_id = OLD.id);
+     DELETE FROM shipment_stock WHERE order_id = OLD.id;
+   END`,
   `CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL DEFAULT ''
@@ -131,7 +175,7 @@ export async function getAdminPasswordHash(): Promise<string> {
   if (!password.trim()) {
     throw new Error("ADMIN_PASSWORD must be set before initializing the admin account");
   }
-  const hash = hashPassword(password);
+  const hash = await securePasswordHash(password);
   await db
     .prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('admin_password_hash', ?)")
     .bind(hash)
