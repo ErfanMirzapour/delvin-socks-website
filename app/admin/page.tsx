@@ -86,8 +86,14 @@ export default function AdminPage() {
   }
 
   async function setStatus(id: number, status: string) {
-    await fetch(`/api/orders/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
-    loadOrders();
+    try {
+      const r = await fetch(`/api/orders/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
+      if (!r.ok) throw new Error();
+      setMsg("");
+      await Promise.all([loadOrders(), loadProducts()]);
+    } catch {
+      setMsg("خطا در تغییر وضعیت سفارش");
+    }
   }
 
   async function delOrder(id: number) {
@@ -121,7 +127,6 @@ export default function AdminPage() {
         <div className="soft-card p-7 text-center">
           <Logo />
           <h1 className="hand text-3xl mt-5">ورود به پنل</h1>
-          <p className="text-sm text-[var(--soft)] mt-2 leading-7">رمز پیش‌فرض <code dir="ltr">admin123</code> است — بعد از ورود عوضش کنید.</p>
           <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} onKeyDown={(e) => e.key === "Enter" && login()}
             placeholder="رمز مدیریت" className="mt-6" />
           {msg && <div className="mt-3 text-sm text-[#8f2f17] font-bold">{msg}</div>}
