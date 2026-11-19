@@ -46,7 +46,7 @@ All in `.env` (gitignored, never committed):
 | `ADMIN_PASSWORD` | yes (first run) | Required bootstrap admin password. Stored into the DB on first run; afterwards the panel's "تغییر رمز" owns it |
 | `TELEGRAM_BOT_TOKEN` | for Telegram alerts | Bot token from `@BotFather` |
 | `TELEGRAM_CHAT_ID` | for Telegram alerts | Your numeric chat ID (see below) |
-| `TELEGRAM_NOTIFY_IN_DEV` | no | Set `true` only for an explicit dev notify test. Default: notify in production only |
+| `TELEGRAM_NOTIFICATIONS_ENABLED` | no | Set `true` explicitly to send notifications; otherwise delivery is disabled |
 | `NEXT_PUBLIC_SHOP_PHONE` | yes | Shop phone shown in footer + About + success page |
 | `NEXT_PUBLIC_TELEGRAM_CHANNEL` | no | Public channel link, e.g. `https://t.me/delvin_socks` |
 | `SUPABASE_URL` | for photo uploads | e.g. `https://xyz.supabase.co` (Project Settings → Data API) |
@@ -77,7 +77,7 @@ SUPABASE_BUCKET=product-images
 
 ## Telegram notifications (one message per order, production only)
 
-When `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` are set **and** `NODE_ENV=production`, `POST /api/orders` sends a fire-and-forget message with order id, name, phone, address, postal code, note, items and total. In development nothing is sent (your dev orders won't spam the production bot). If unset, orders are only stored in the panel — no error.
+When `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, and `TELEGRAM_NOTIFICATIONS_ENABLED=true` are set, `POST /api/orders` sends a fire-and-forget message with order id, name, phone, address, postal code, note, items and total. Production must have the opt-in configured as a Worker secret before deploying this change. Previews explicitly default to `false`; local runs remain off unless opted in. Use a separate test bot and chat for preview tests. `NODE_ENV` does not identify the deployment environment.
 
 Setup (5 minutes, phone + laptop):
 
@@ -137,14 +137,18 @@ Deployment checks on 2026-11-11: `https://delvin-socks.ir` and the production Wo
 
 ### Production and previews
 
+The production custom domain is recorded in `cloudflare.config.ts`. Cloudflare DNS proxies `www`, and a redirect rule sends HTTPS requests to the apex while preserving paths and query strings.
+
+Worker Previews bind `DB` to the separate `delvin-socks-preview` D1 database and seed sample products when empty. All branch previews share that database, so they are isolated from production but not from one another. Preview runtime secrets are separate from production. Previews Base has a unique `ADMIN_PASSWORD` and credentials for the separate `delvin-socks-preview` Supabase project and its private `product-images` bucket. Never use the production service-role key in a preview. Use a separate test bot and chat for Telegram delivery tests. Preview URLs are public unless protected with Cloudflare Access; use only disposable data.
+
 - [x] Deploy the production Worker with D1 and Supabase Storage (production build check passed)
 - [x] Restore HTTPS availability at `delvin-socks.ir` (HTTP 200 verified)
-- [ ] Verify the custom domain binding in Cloudflare and record it in deployment configuration so future deploys preserve it
+- [x] Verify the custom domain binding in Cloudflare and record it in deployment configuration so future deploys preserve it
 - [ ] Investigate the failed branch preview build and verify a fresh branch or PR produces a working preview URL. Inspect the [failed Cloudflare build](https://dash.cloudflare.com/5c6e3d8ea8ddeae6f56b5620e52a8c76/workers/services/view/delvin-socks/production/builds/9ba1192b-66ab-4052-81f2-a8c7b7644099)
 - [ ] Isolate hosted previews from production with a separate D1 database, storage location, admin credentials, and notification settings. Version URLs alone do not establish data isolation
 - [ ] Gate Telegram notifications by deployment environment. Local production builds and hosted previews can have `NODE_ENV=production`, so the current check can send real alerts when real bot credentials are present
 - [ ] Verify the local production-runtime preview with `pnpm run preview`, including database access and explicit sample-data configuration
-- [ ] Configure `www.delvin-socks.ir` with HTTPS and a redirect to the apex domain (the www hostname did not resolve during the check)
+- [x] Configure `www.delvin-socks.ir` with HTTPS and a redirect to the apex domain (HTTPS 301 with path and query preservation verified on 2026-11-11)
 - [ ] Verify a complete order flow in an isolated preview, including login, password change, image upload, order persistence, shipment status, stock updates, and Telegram delivery. Repeat a controlled production smoke check before launch
 - [ ] Document and verify D1 backup/restore, image recovery, and deployment rollback procedures. Add uptime and runtime-error monitoring
 
