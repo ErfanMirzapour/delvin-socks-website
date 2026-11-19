@@ -18,6 +18,7 @@ jobs:
       - run: pnpm exec tsc --noEmit
       - run: pnpm run lint
       - run: pnpm run build
+      - run: node --experimental-strip-types --test tests/password.test.mjs
       - run: python3 tests/inventory.py
       - name: Test API against local D1
         run: |

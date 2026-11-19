@@ -2,13 +2,19 @@ import { cookies } from "next/headers";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import crypto from "node:crypto";
 import { ensureSchema, getAdminPasswordHash, hashPassword } from "./db";
-import { derive, securePasswordHash } from "./password";
+import { derive, deriveScrypt, securePasswordHash } from "./password";
 export { securePasswordHash } from "./password";
 
 const COOKIE = "socks_admin";
 const LIFETIME = 60 * 60 * 24 * 7;
 
 async function matches(pw: string, stored: string): Promise<boolean> {
+  if (stored.startsWith("scrypt$")) {
+    const [, n, r, p, salt, expected] = stored.split("$");
+    if (n !== "16384" || r !== "8" || p !== "5" || !/^[a-f0-9]{32}$/.test(salt) || !/^[a-f0-9]{64}$/.test(expected)) return false;
+    const actual = deriveScrypt(pw, Buffer.from(salt, "hex"));
+    return crypto.timingSafeEqual(Buffer.from(actual, "hex"), Buffer.from(expected, "hex"));
+  }
   if (!stored.startsWith("pbkdf2-sha256$")) return hashPassword(pw) === stored;
   const [, rounds, salt, expected] = stored.split("$");
   const iterations = Number(rounds);
@@ -21,7 +27,7 @@ export async function verifyAdminPassword(pw: string): Promise<string | null> {
   if (!pw || pw.length > 1024) return null;
   const saved = await getAdminPasswordHash();
   if (!(await matches(pw, saved))) return null;
-  if (!saved.startsWith("pbkdf2-sha256$")) {
+  if (!saved.startsWith("scrypt$")) {
     const upgraded = await securePasswordHash(pw);
     const db = await ensureSchema();
     const result = await db.prepare("UPDATE settings SET value=? WHERE key='admin_password_hash' AND value=?").bind(upgraded, saved).run();

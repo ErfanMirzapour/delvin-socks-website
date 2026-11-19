@@ -1,6 +1,9 @@
 """Run against a fresh local dev database with ADMIN_PASSWORD=test-bootstrap-password and DB_SEED=true."""
 import concurrent.futures
 import http.cookiejar
+import hashlib
+import pathlib
+import sqlite3
 import json
 import os
 import time
@@ -52,4 +55,13 @@ for quantity in (0, -1, 1.5):
     assert call(client(), "/api/orders", "POST", invalid, {"Idempotency-Key": str(uuid.uuid4())})[0] == 400
 invalid = {**order, "items": [{"id": product["id"], "qty": product["stock"]}, {"id": product["id"], "qty": 1}]}
 assert call(client(), "/api/orders", "POST", invalid, {"Idempotency-Key": str(uuid.uuid4())})[0] == 400
-print("API bootstrap, password sessions, checkout validation, and concurrent retry checks passed")
+# The test database is disposable: exercise upgrading the old production hash.
+databases = [p for p in pathlib.Path(".wrangler/state/v3/d1/miniflare-D1DatabaseObject").glob("*.sqlite") if p.name != "metadata.sqlite"]
+assert len(databases) == 1, databases
+with sqlite3.connect(databases[0]) as db:
+    legacy = hashlib.sha256(b"socks:legacy-test-password").hexdigest()
+    db.execute("UPDATE settings SET value=? WHERE key='admin_password_hash'", (legacy,))
+assert call(client(), "/api/login", "POST", {"password": "legacy-test-password"})[0] == 200
+with sqlite3.connect(databases[0]) as db:
+    assert db.execute("SELECT value FROM settings WHERE key='admin_password_hash'").fetchone()[0].startswith("scrypt$")
+print("API bootstrap, legacy password migration, sessions, checkout validation, and concurrent retry checks passed")
