@@ -86,8 +86,14 @@ export default function AdminPage() {
   }
 
   async function setStatus(id: number, status: string) {
-    await fetch(`/api/orders/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
-    loadOrders();
+    try {
+      const r = await fetch(`/api/orders/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
+      if (!r.ok) throw new Error();
+      setMsg("");
+      await Promise.all([loadOrders(), loadProducts()]);
+    } catch {
+      setMsg("خطا در تغییر وضعیت سفارش");
+    }
   }
 
   async function delOrder(id: number) {
