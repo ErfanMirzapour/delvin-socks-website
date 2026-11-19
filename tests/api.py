@@ -59,6 +59,12 @@ assert call(client(), "/api/orders", "POST", invalid, {"Idempotency-Key": str(uu
 databases = [p for p in pathlib.Path(".cloudflare/state/v3/d1/miniflare-D1DatabaseObject").glob("*.sqlite") if p.name != "metadata.sqlite"]
 assert len(databases) == 1, databases
 with sqlite3.connect(databases[0]) as db:
+    salt = bytes.fromhex("00112233445566778899aabbccddeeff")
+    derived = hashlib.pbkdf2_hmac("sha256", b"pbkdf2-test-password", salt, 210000).hex()
+    db.execute("UPDATE settings SET value=? WHERE key='admin_password_hash'", (f"pbkdf2-sha256$210000${salt.hex()}${derived}",))
+assert call(client(), "/api/login", "POST", {"password": "pbkdf2-test-password"})[0] == 200
+with sqlite3.connect(databases[0]) as db:
+    assert db.execute("SELECT value FROM settings WHERE key='admin_password_hash'").fetchone()[0].startswith("scrypt$")
     legacy = hashlib.sha256(b"socks:legacy-test-password").hexdigest()
     db.execute("UPDATE settings SET value=? WHERE key='admin_password_hash'", (legacy,))
 assert call(client(), "/api/login", "POST", {"password": "legacy-test-password"})[0] == 200
