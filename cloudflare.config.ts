@@ -30,7 +30,9 @@ export default defineConfig(({ isPreview }) => ({
       ADMIN_PASSWORD: bindings.secret(),
       TELEGRAM_BOT_TOKEN: isPreview ? undefined : bindings.secret(),
       TELEGRAM_CHAT_ID: isPreview ? undefined : bindings.secret(),
-      SUPABASE_URL: bindings.secret(),
+      SUPABASE_URL: isPreview
+        ? bindings.text("https://nrwmvdjbbvtvuzrbrveu.supabase.co")
+        : bindings.secret(),
       SUPABASE_SERVICE_KEY: bindings.secret(),
     },
   }),
