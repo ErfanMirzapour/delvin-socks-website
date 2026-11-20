@@ -1,11 +1,16 @@
 import type { Order } from "./db";
 import { secret } from "./db";
+import { selectTelegramChat } from "./telegram-config";
+
+function notificationChatId(): string {
+  return selectTelegramChat(secret("DEPLOYMENT_ENV"), secret("TELEGRAM_CHAT_ID"), secret("PREVIEW_TELEGRAM_CHAT_ID"));
+}
 
 export function telegramConfigured(): boolean {
   return Boolean(
     secret("TELEGRAM_NOTIFICATIONS_ENABLED") === "true" &&
       secret("TELEGRAM_BOT_TOKEN") &&
-      secret("TELEGRAM_CHAT_ID")
+      notificationChatId()
   );
 }
 
@@ -14,7 +19,7 @@ export async function notifyTelegram(order: Order): Promise<boolean> {
   // Require an explicit opt-in in each deployment instead.
   if (!telegramConfigured()) return false;
   const token = secret("TELEGRAM_BOT_TOKEN");
-  const chatId = secret("TELEGRAM_CHAT_ID");
+  const chatId = notificationChatId();
   if (!token || !chatId) return false;
   const lines = order.items.map(
     (it, i) =>

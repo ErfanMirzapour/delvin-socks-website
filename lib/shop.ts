@@ -107,6 +107,7 @@ export type CheckoutForm = {
   address: string;
   postal_code: string;
   note: string;
+  website: string;
 };
 
 /** Checkout form state and order submission. Redirects to `successPath?id=…`. */
@@ -114,9 +115,10 @@ export function useCheckout(successPath: string) {
   const cart = useCart();
   const view = useCartView();
   const router = useRouter();
-  const [form, setForm] = useState<CheckoutForm>({ fullname: "", phone: "", address: "", postal_code: "", note: "" });
+  const [form, setForm] = useState<CheckoutForm>({ fullname: "", phone: "", address: "", postal_code: "", note: "", website: "" });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const submitting = useRef(false);
 
   function field<K extends keyof CheckoutForm>(k: K) {
     return {
@@ -127,21 +129,35 @@ export function useCheckout(successPath: string) {
 
   async function submit(e?: { preventDefault: () => void }) {
     e?.preventDefault();
+    if (submitting.current) return;
+    submitting.current = true;
     setError("");
     setBusy(true);
     try {
+      const payload = JSON.stringify({ ...form, items: cart.lines });
+      const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(payload));
+      const fingerprint = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+      const saved = sessionStorage.getItem("socks_order_request");
+      let request: { fingerprint: string; key: string } | null = null;
+      try { request = saved ? JSON.parse(saved) : null; } catch {}
+      if (!request || request.fingerprint !== fingerprint) {
+        request = { fingerprint, key: crypto.randomUUID() };
+        sessionStorage.setItem("socks_order_request", JSON.stringify(request));
+      }
       const res = await fetch("/api/orders", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, items: cart.lines }),
+        headers: { "Content-Type": "application/json", "Idempotency-Key": request.key },
+        body: payload,
       });
       const j = (await res.json()) as { id: number; error?: string };
       if (!res.ok) throw new Error(j.error || "خطا");
+      sessionStorage.removeItem("socks_order_request");
       cart.clear();
       router.push(`${successPath}?id=${j.id}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "خطا در ثبت سفارش");
     } finally {
+      submitting.current = false;
       setBusy(false);
     }
   }

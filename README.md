@@ -139,7 +139,7 @@ Deployment checks on 2026-11-11: `https://delvin-socks.ir` and the production Wo
 
 The production custom domain is recorded in `cloudflare.config.ts`. Cloudflare DNS proxies `www`, and a redirect rule sends HTTPS requests to the apex while preserving paths and query strings.
 
-Worker Previews bind `DB` to the separate `delvin-socks-preview` D1 database and seed sample products when empty. All branch previews share that database, so they are isolated from production but not from one another. Preview runtime secrets are separate from production. Previews Base has a unique `ADMIN_PASSWORD` and credentials for the separate `delvin-socks-preview` Supabase project and its private `product-images` bucket. Never use the production service-role key in a preview. Use a separate test bot and chat for Telegram delivery tests. Preview URLs are public unless protected with Cloudflare Access; use only disposable data.
+Worker Previews bind `DB` to the separate `delvin-socks-preview` D1 database and seed sample products when empty. All branch previews share that database, so they are isolated from production but not from one another. Preview runtime secrets are separate from production. Previews Base has a unique `ADMIN_PASSWORD` and credentials for the separate `delvin-socks-preview` Supabase project and its private `product-images` bucket. Never use the production service-role key in a preview. Preview notifications can use the same bot as production, but Previews Base must have separate `TELEGRAM_BOT_TOKEN` and `PREVIEW_TELEGRAM_CHAT_ID` secrets. Preview code never falls back to the production chat ID. The receiving account must start a conversation with the bot. Preview URLs are public unless protected with Cloudflare Access; use only disposable data.
 
 - [x] Deploy the production Worker with D1 and Supabase Storage (production build check passed)
 - [x] Restore HTTPS availability at `delvin-socks.ir` (HTTP 200 verified)
@@ -155,17 +155,17 @@ Worker Previews bind `DB` to the separate `delvin-socks-preview` D1 database and
 ### Admin and order correctness
 
 - [x] Await the admin password database write before refreshing the session or returning success
-- [ ] Verify the new password persists and existing sessions are invalidated in an isolated environment
-- [ ] Verify the saved production admin password has been changed through the panel. `ADMIN_PASSWORD` initializes a fresh database only. Updating the secret does not replace an existing saved password
+- [x] Verify the new password persists and existing sessions are invalidated in an isolated environment
+- [x] Confirm the saved production admin password was changed through the panel (confirmed by the owner on 2026-11-19). `ADMIN_PASSWORD` initializes a fresh database only; updating the secret does not replace an existing saved password.
 - [x] Remove the `admin123` bootstrap fallback, require an explicit nonempty bootstrap password, and make concurrent initialization safe
 - [ ] Enforce a strong bootstrap password policy
-- [ ] Replace the password-hash cookie with revocable random session tokens, set Secure cookies in production, and use a salted password hashing scheme with a work factor. Preserve password-change session invalidation
-- [ ] Rate-limit login and order submission, add basic checkout spam protection, and enforce request size and field length limits
-- [ ] Validate finite positive integer quantities and product IDs, aggregate duplicate product lines before stock checks, and validate nonnegative integer prices and stock in admin endpoints
-- [ ] Prevent duplicate orders when checkout is retried or submitted twice
-- [ ] Make shipment status changes safe under concurrent requests so stock changes once per transition. Handle insufficient stock explicitly and prevent stock inflation when reversing a shipment after a floored deduction
-- [ ] Confirm the pending-order stock policy. Stock is checked at checkout and deducted at shipment, so multiple pending orders can exceed available inventory
-- [ ] Add focused regression checks for password bootstrap, checkout validation, duplicate submissions, and concurrent order status changes. Resolve the cart lint issue reported in the redesign PR and establish required build/type/lint checks
+- [x] Replace the password-hash cookie with revocable random session tokens, set Secure cookies in production, and use a salted password hashing scheme with a work factor. Preserve password-change session invalidation
+- [x] Rate-limit login and order submission, add basic checkout spam protection, and enforce request size and field length limits
+- [x] Validate finite positive integer quantities and product IDs, aggregate duplicate product lines before stock checks, and validate nonnegative integer prices and stock in admin endpoints
+- [x] Prevent duplicate orders when checkout is retried or submitted twice
+- [x] Make shipment status changes safe under concurrent requests so stock changes once per transition. Handle insufficient stock explicitly and prevent stock inflation when reversing a shipment after a floored deduction
+- [x] Confirm the pending-order stock policy: stock is checked at checkout and deducted at shipment; multiple pending orders can exceed available inventory
+- [ ] Enforce the build/type/lint and regression workflow as required checks in repository branch protection. The workflow and focused local regression checks are included, and the cart lint error is resolved.
 
 ### Catalog and launch
 

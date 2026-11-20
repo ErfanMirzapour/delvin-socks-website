@@ -8,6 +8,7 @@ export default function ShopCheckout() {
   const L = "grid gap-1.5 text-sm font-bold";
   return (
     <form onSubmit={c.submit} className="mx-auto max-w-5xl px-4 py-10">
+      <input {...c.field("website")} name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" style={{ position: "absolute", left: "-10000px" }} />
       <h1 className="hand text-5xl">نشانی‌تان را بنویسید</h1>
       <div className="mt-5 rounded-[22px] bg-[var(--mustard)]/30 p-4 text-sm leading-8">✉️ {CHECKOUT_NOTE}</div>
       <div className="mt-8 grid md:grid-cols-[1fr_330px] gap-6 items-start">
@@ -32,7 +33,7 @@ export default function ShopCheckout() {
             {c.empty && <div className="text-sm text-[var(--soft)] py-2">سبد خالی است.</div>}
           </div>
           <div className="flex justify-between font-black text-lg mt-4"><span>جمع</span><span>{formatPrice(c.total)}</span></div>
-          {c.error && <div className="mt-4 rounded-2xl bg-[#f6d5cb] text-[#8f2f17] p-3 text-sm font-bold">{c.error}</div>}
+          {c.error && <div role="alert" className="mt-4 rounded-2xl bg-[#f6d5cb] text-[#8f2f17] p-3 text-sm font-bold">{c.error}</div>}
           <button type="submit" disabled={!c.canSubmit} className="btn w-full mt-5 text-lg">{c.busy ? "در حال ثبت…" : "ثبت سفارش ✓"}</button>
         </div>
       </div>

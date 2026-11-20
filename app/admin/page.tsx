@@ -50,7 +50,7 @@ export default function AdminPage() {
   async function login() {
     const r = await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: pw }) });
     if (r.ok) { setAuthed(true); setMsg(""); loadProducts(); loadOrders(); }
-    else setMsg("رمز اشتباه است");
+    else { const body = await r.json().catch(() => ({})) as { error?: string }; setMsg(body.error || "رمز اشتباه است"); }
   }
 
   async function uploadFile(f: File): Promise<string | null> {
@@ -88,7 +88,11 @@ export default function AdminPage() {
   async function setStatus(id: number, status: string) {
     try {
       const r = await fetch(`/api/orders/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
-      if (!r.ok) throw new Error();
+      if (!r.ok) {
+        const body = await r.json() as { error?: string };
+        setMsg(body.error || "خطا در تغییر وضعیت سفارش");
+        return;
+      }
       setMsg("");
       await Promise.all([loadOrders(), loadProducts()]);
     } catch {

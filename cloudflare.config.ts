@@ -22,14 +22,16 @@ export default defineConfig(({ isPreview }) => ({
           : "8d537aba-79e4-4ff2-960d-752843b118af",
       }),
       DB_SEED: isPreview ? bindings.text("true") : undefined,
+      DEPLOYMENT_ENV: isPreview ? bindings.text("preview") : undefined,
       TELEGRAM_NOTIFICATIONS_ENABLED: isPreview
-        ? bindings.text("false")
+        ? bindings.text("true")
         : bindings.secret(),
       // Secrets: set in production with `cf workers secrets update`,
       // read from .env / .dev.vars in local dev.
       ADMIN_PASSWORD: bindings.secret(),
-      TELEGRAM_BOT_TOKEN: isPreview ? undefined : bindings.secret(),
+      TELEGRAM_BOT_TOKEN: bindings.secret(),
       TELEGRAM_CHAT_ID: isPreview ? undefined : bindings.secret(),
+      PREVIEW_TELEGRAM_CHAT_ID: isPreview ? bindings.secret() : undefined,
       SUPABASE_URL: isPreview
         ? bindings.text("https://nrwmvdjbbvtvuzrbrveu.supabase.co")
         : bindings.secret(),
