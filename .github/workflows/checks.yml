@@ -16,11 +16,11 @@ jobs:
       - run: pnpm run typecheck
       - run: pnpm run lint
       - run: pnpm run build
-      - run: node --experimental-strip-types --test tests/password.test.mjs
+      - run: node --experimental-strip-types --test tests/password.test.mjs tests/telegram.test.mjs
       - run: python3 tests/inventory.py
       - name: Test API against local D1
         run: |
-          ADMIN_PASSWORD=test-bootstrap-password DB_SEED=true TELEGRAM_NOTIFICATIONS_ENABLED=false TELEGRAM_BOT_TOKEN=test TELEGRAM_CHAT_ID=test SUPABASE_URL=https://example.invalid SUPABASE_SERVICE_KEY=test pnpm exec vite dev --port 43219 --strictPort > /tmp/delvin-test-server.log 2>&1 &
+          ADMIN_PASSWORD=test-bootstrap-password DB_SEED=true TELEGRAM_NOTIFICATIONS_ENABLED=false TELEGRAM_BOT_TOKEN=test TELEGRAM_CHAT_ID=test SUPABASE_URL=http://127.0.0.1:43225 SUPABASE_SERVICE_KEY=test pnpm exec vite dev --port 43219 --strictPort > /tmp/delvin-test-server.log 2>&1 &
           server_pid=$!
           trap 'kill "$server_pid" || true' EXIT
-          python3 tests/api.py || { cat /tmp/delvin-test-server.log; exit 1; }
+          TEST_STORAGE_MOCK=true python3 tests/api.py || { cat /tmp/delvin-test-server.log; exit 1; }

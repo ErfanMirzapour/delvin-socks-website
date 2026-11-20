@@ -66,7 +66,7 @@ export async function deleteImage(name: string): Promise<void> {
     await fetch(`${url}/storage/v1/object/${bucket}`, {
       method: "DELETE",
       headers: { ...authHeaders(key), "Content-Type": "application/json" },
-      body: JSON.stringify([name]),
+      body: JSON.stringify({ prefixes: [name] }),
     });
   } catch {
     // Orphan objects are harmless; ignore.
