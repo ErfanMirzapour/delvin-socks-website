@@ -3,6 +3,8 @@ import { bindings, defineConfig, defineWorker } from "cf/config";
 export default defineConfig(({ isPreview }) => ({
   worker: defineWorker({
     name: "delvin-socks",
+    workersDev: false,
+    previewUrls: true,
     domains: isPreview ? [] : ["delvin-socks.ir"],
     entrypoint: "vinext/server/fetch-handler",
     compatibilityDate: "2026-11-11",
